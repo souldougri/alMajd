@@ -1,0 +1,86 @@
+import { useEffect, useState } from "react";
+import { ShieldCheck } from "lucide-react";
+import { listAuditLogs, type AuditLog, type AuditAction } from "@/lib/audit";
+
+const ACTION_LABELS: Record<AuditAction, string> = {
+  "user.create": "إنشاء حساب",
+  "user.update": "تعديل حساب",
+  "user.disable": "تعطيل حساب",
+  "user.enable": "تفعيل حساب",
+  "user.reset_password": "إعادة تعيين كلمة مرور",
+  "user.delete": "حذف حساب",
+  "user.migrate": "ترحيل حساب قديم",
+};
+
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("ar", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+export function AuditLogView() {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setLogs(await listAuditLogs());
+      } catch (err) {
+        console.error("Failed to load audit logs:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  return (
+    <div>
+      <h2 className="mb-5 flex items-center gap-2 font-display text-xl font-bold text-navy">
+        <ShieldCheck className="size-5 text-gold" />
+        سجل التدقيق (Audit Log)
+      </h2>
+      {loading ? (
+        <div className="rounded-2xl border border-navy/10 bg-white p-8 text-center text-sm text-navy/55 shadow-sm">
+          جارٍ تحميل سجل التدقيق…
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="rounded-2xl border border-navy/10 bg-white p-8 text-center text-sm text-navy/55 shadow-sm">
+          لا توجد أحداث مسجلة بعد. سيتم تسجيل إجراءات إدارة المستخدمين هنا.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-navy/10 bg-white shadow-sm">
+          <table className="w-full min-w-[560px] text-right text-sm">
+            <thead>
+              <tr className="border-b border-navy/10 bg-cream-subtle text-navy">
+                <th className="px-4 py-3 font-bold">التاريخ</th>
+                <th className="px-4 py-3 font-bold">الإجراء</th>
+                <th className="px-4 py-3 font-bold">بواسطة</th>
+                <th className="px-4 py-3 font-bold">المستهدف</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log) => (
+                <tr key={log.id} className="border-b border-navy/5 last:border-0 hover:bg-cream">
+                  <td className="px-4 py-3 text-navy/75">{formatDate(log.createdAt)}</td>
+                  <td className="px-4 py-3">
+                    <span className="rounded-full bg-navy px-2.5 py-1 text-xs font-semibold text-gold">
+                      {ACTION_LABELS[log.action] ?? log.action}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-navy">{log.actorName}</td>
+                  <td className="px-4 py-3 text-navy/75">{log.targetName ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

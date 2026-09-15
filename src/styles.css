@@ -1,0 +1,345 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", "IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Amiri", "Noto Naskh Arabic", serif;
+  --font-tajawal: "Tajawal", "Cairo", "IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif;
+
+  --color-navy: #14324d;
+  --color-navy-dark: #0e2238;
+  --color-gold: #d89a3e;
+  --color-gold-light: #e8b96a;
+  --color-cream: #faf6ee;
+  --color-cream-subtle: #f0e8d8;
+
+  --color-bg: #eef1f5;
+  --color-bg-elevated: #f7f8fb;
+  --color-bg-subtle: #e4e8ee;
+  --color-surface: #ffffff;
+  --color-fg: #1a1f2b;
+  --color-fg-muted: #5b6472;
+  --color-fg-subtle: #8a93a3;
+  --color-primary: #1b3a7a;
+  --color-primary-fg: #f7f4ee;
+  --color-accent: #1b3a7a;
+  --color-accent-fg: #f7f4ee;
+  --color-paper: #f7f4ee;
+  --color-ink: #1a1f2b;
+  --color-success: #2e7d4f;
+  --color-warn: #b45309;
+  --color-danger: #b71c1c;
+  --color-border: color-mix(in oklab, var(--color-fg) 12%, transparent);
+  --color-border-strong: color-mix(in oklab, var(--color-fg) 22%, transparent);
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --tracking-brand: 0.14em;
+
+  --shadow-border: 0 0 0 1px color-mix(in oklab, var(--color-fg) 10%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-window: 0 0 0 1px color-mix(in oklab, var(--color-fg) 12%, transparent),
+    0 18px 40px -24px rgb(16 28 58 / 0.35);
+
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-quick: 150ms;
+  --motion-fast: 250ms;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  img {
+    outline: 1px solid color-mix(in oklab, var(--color-fg) 10%, transparent);
+    outline-offset: -1px;
+  }
+
+  img.seal {
+    outline: none;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise-in {
+  animation: rise-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in {
+    animation: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+.print-only {
+  display: none;
+}
+
+.print-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: auto;
+  background: color-mix(in oklab, var(--color-fg) 45%, transparent);
+  padding: 1.25rem;
+}
+
+.print-toolbar,
+.print-prep {
+  margin: 0 auto 1rem;
+  max-width: 210mm;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 0.85rem 1rem;
+  box-shadow: var(--shadow-window);
+}
+
+.print-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.print-sheet {
+  margin: 0 auto;
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--color-ink);
+  padding: 14mm;
+  font-family: var(--font-sans);
+  box-shadow: var(--shadow-window);
+}
+
+.print-header {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.print-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.print-school-ar {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.3;
+}
+
+.print-school-fr {
+  font-size: 0.78rem;
+  color: var(--color-fg-muted);
+}
+
+.print-meta,
+.print-title-fr,
+.print-extra {
+  font-size: 0.78rem;
+  color: var(--color-fg-muted);
+}
+
+.print-title {
+  margin-top: 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 700;
+}
+
+.print-date-block {
+  font-size: 0.75rem;
+  text-align: left;
+  color: var(--color-fg-muted);
+}
+
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.print-table th,
+.print-table td {
+  border: 1px solid color-mix(in oklab, var(--color-fg) 22%, transparent);
+  padding: 0.35rem 0.4rem;
+  text-align: right;
+}
+
+.print-table th {
+  background: color-mix(in oklab, var(--color-primary) 8%, white);
+  font-weight: 600;
+}
+
+.print-sign-cell {
+  min-width: 4.5rem;
+  height: 1.6rem;
+}
+
+.print-dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.print-dl-id {
+  margin-top: 0.75rem;
+}
+
+.print-dl dt {
+  color: var(--color-fg-muted);
+  font-size: 0.75rem;
+}
+
+.print-dl dd {
+  font-weight: 600;
+}
+
+.print-span-2 {
+  grid-column: 1 / -1;
+}
+
+.print-body {
+  margin: 1rem 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid color-mix(in oklab, var(--color-fg) 18%, transparent);
+}
+
+.print-body h2 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  color: var(--color-primary);
+}
+
+.print-body p,
+.print-letter {
+  font-size: 0.95rem;
+  line-height: 1.85;
+}
+
+.print-ref {
+  margin-bottom: 0.85rem;
+  font-size: 0.85rem;
+}
+
+.print-signs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2.2rem;
+  font-size: 0.85rem;
+}
+
+.print-sign-line {
+  margin-top: 2.4rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--color-fg) 35%, transparent);
+}
+
+.print-sign-hint {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-fg-muted);
+}
+
+.print-empty {
+  margin: 2rem 0;
+  padding: 1rem;
+  border: 1px solid color-mix(in oklab, var(--color-danger) 45%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--color-danger) 6%, white);
+  color: var(--color-danger);
+  text-align: center;
+}
+
+.print-sheet .ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body:has(.print-sheet) .app-frame {
+    display: none !important;
+  }
+  .print-stage {
+    position: static;
+    inset: auto;
+    overflow: visible;
+    background: transparent;
+    padding: 0;
+  }
+  .print-sheet {
+    margin: 0;
+    width: auto;
+    min-height: auto;
+    padding: 0;
+    box-shadow: none;
+  }
+}
