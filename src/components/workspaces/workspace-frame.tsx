@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { LayoutDashboard } from "lucide-react";
 import { AppHeader } from "@/components/app/app-header";
 import { useAuth } from "@/lib/auth/store";
 import { WORKSPACE_LABELS, type WorkspaceId } from "@/lib/workspaces";
@@ -17,7 +18,19 @@ export function WorkspaceFrame({ ws, children }: { ws: WorkspaceId; children: Re
 
   return (
     <div className="app-frame flex min-h-dvh flex-col bg-cream text-navy">
-      <AppHeader />
+      <AppHeader
+        nav={{
+          title: label.ar,
+          items: [
+            {
+              id: "dashboard",
+              label: admin ? "لوحة المدير" : "لوحة الموظف",
+              icon: LayoutDashboard,
+              to: admin ? "/app/admin" : "/app/staff",
+            },
+          ],
+        }}
+      />
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-5 p-4 sm:p-6">
         <div>
           <Link

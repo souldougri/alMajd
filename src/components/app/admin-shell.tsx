@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bell, BookOpen, CalendarCheck2, FolderOpen, Globe, HardDriveDownload, LayoutDashboard, ShieldCheck, Users, Wallet } from "lucide-react";
+import { Bell, BookOpen, CalendarCheck2, FolderOpen, Globe, HardDriveDownload, LayoutDashboard, ShieldCheck, Users, Wallet, type LucideIcon } from "lucide-react";
 import { AppHeader } from "./app-header";
 import { UserManagement } from "./user-management";
 import { AuditLogView } from "./audit-log";
@@ -16,6 +16,17 @@ import { cn } from "@/lib/utils";
 
 type Tab = "home" | "users" | "audit" | "expenses" | "site" | "notifications" | "documents" | "backup";
 
+const ADMIN_TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
+  { id: "home", label: "الرئيسية", icon: LayoutDashboard },
+  { id: "users", label: "المستخدمون", icon: Users },
+  { id: "audit", label: "سجل التدقيق", icon: ShieldCheck },
+  { id: "expenses", label: "سجل الإنفاق", icon: Wallet },
+  { id: "site", label: "الموقع", icon: Globe },
+  { id: "notifications", label: "الإشعارات", icon: Bell },
+  { id: "documents", label: "المستندات", icon: FolderOpen },
+  { id: "backup", label: "نسخة احتياطية", icon: HardDriveDownload },
+];
+
 const WS_ICONS: Record<WorkspaceId, typeof Users> = {
   registrar: Users,
   academic: BookOpen,
@@ -29,23 +40,23 @@ export function AdminShell() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-cream text-navy">
-      <AppHeader />
+      <AppHeader
+        nav={{
+          title: "لوحة المدير",
+          items: ADMIN_TABS.map((item) => ({
+            id: item.id,
+            label: item.label,
+            icon: item.icon,
+            active: tab === item.id,
+            onSelect: () => setTab(item.id),
+          })),
+        }}
+      />
       <div className="flex flex-1">
         <aside className="w-60 shrink-0 border-e border-navy/10 bg-white p-3 max-lg:hidden">
           <p className="mb-2 px-2 text-xs font-semibold tracking-wide text-navy/45">لوحة المدير</p>
           <nav className="flex flex-col gap-0.5">
-            {(
-              [
-                { id: "home" as Tab, label: "الرئيسية", icon: LayoutDashboard },
-                { id: "users" as Tab, label: "المستخدمون", icon: Users },
-                { id: "audit" as Tab, label: "سجل التدقيق", icon: ShieldCheck },
-                { id: "expenses" as Tab, label: "سجل الإنفاق", icon: Wallet },
-                { id: "site" as Tab, label: "الموقع", icon: Globe },
-                { id: "notifications" as Tab, label: "الإشعارات", icon: Bell },
-                { id: "documents" as Tab, label: "المستندات", icon: FolderOpen },
-                { id: "backup" as Tab, label: "نسخة احتياطية", icon: HardDriveDownload },
-              ] as const
-            ).map((item) => (
+            {ADMIN_TABS.map((item) => (
               <button
                 type="button"
                 key={item.id}

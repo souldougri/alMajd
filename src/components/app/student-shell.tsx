@@ -10,6 +10,7 @@ import {
   Timer,
   UserRound,
   Wallet,
+  type LucideIcon,
 } from "lucide-react";
 import { AppHeader } from "./app-header";
 import { useAuth } from "@/lib/auth/store";
@@ -151,9 +152,29 @@ export function StudentShell() {
 
   const paidFull = portfolio && portfolio.paid >= portfolio.annualFee && portfolio.annualFee > 0;
 
+  const tabItems: { id: Tab; label: string; icon: LucideIcon }[] = [
+    { id: "results", label: "النتائج", icon: BookOpen },
+    { id: "fees", label: "الرسوم الدراسية", icon: Wallet },
+    { id: "attendance", label: "الحضور", icon: CalendarDays },
+    { id: "timetable", label: "الجدول الزمني", icon: Timer },
+    { id: "warnings", label: "الملاحظات", icon: AlertTriangle },
+    { id: "docs", label: "المستندات", icon: FolderOpen },
+  ];
+
   return (
     <div className="flex min-h-dvh flex-col bg-cream text-navy">
-      <AppHeader />
+      <AppHeader
+        nav={{
+          title: "بوابة الطالب",
+          items: tabItems.map((item) => ({
+            id: item.id,
+            label: item.label,
+            icon: item.icon,
+            active: tab === item.id,
+            onSelect: () => setTab(item.id),
+          })),
+        }}
+      />
       <main className="mx-auto w-full max-w-5xl flex-1 p-4">
         {/* Profile card */}
         <section className="flex flex-wrap items-center gap-4 rounded-2xl bg-white p-5 shadow-sm">

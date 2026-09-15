@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpenCheck, CalendarDays, ChevronDown, FolderOpen, GraduationCap, Loader2, Save } from "lucide-react";
+import { BookOpenCheck, CalendarDays, ChevronDown, FolderOpen, GraduationCap, Loader2, Save, type LucideIcon } from "lucide-react";
 import { AppHeader } from "./app-header";
 import { useAuth } from "@/lib/auth/store";
 import { getTeacherPortfolio, saveTeacherGrade, type TeacherPortfolio } from "@/lib/teacher";
@@ -190,9 +190,26 @@ export function TeacherShell() {
   const students = currentClass?.students ?? [];
   const isEmpty = !portfolio || portfolio.classes.length === 0;
 
+  const tabItems: { id: TabId; label: string; icon: LucideIcon }[] = [
+    { id: "grades", label: "إدخال الدرجات", icon: GraduationCap },
+    { id: "schedule", label: "جدول الحصص", icon: CalendarDays },
+    { id: "docs", label: "الملفات التعليمية", icon: FolderOpen },
+  ];
+
   return (
     <div className="flex min-h-dvh flex-col bg-cream text-navy">
-      <AppHeader />
+      <AppHeader
+        nav={{
+          title: "بوابة الأستاذ",
+          items: tabItems.map((item) => ({
+            id: item.id,
+            label: item.label,
+            icon: item.icon,
+            active: tab === item.id,
+            onSelect: () => setTab(item.id),
+          })),
+        }}
+      />
       <main className="mx-auto w-full max-w-5xl flex-1 p-4">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">

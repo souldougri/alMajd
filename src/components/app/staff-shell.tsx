@@ -17,7 +17,21 @@ export function StaffShell() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-cream text-navy">
-      <AppHeader />
+      <AppHeader
+        nav={{
+          title: "لوحة الموظف",
+          items: ws.map((id) => {
+            const label = WORKSPACE_LABELS[id];
+            const Icon = WS_ICONS[id];
+            return {
+              id,
+              label: `مساحة ${label.ar}`,
+              icon: Icon,
+              to: label.route,
+            };
+          }),
+        }}
+      />
       <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-8">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-navy">مرحبًا، {user?.nameAr ?? ""}</h1>
