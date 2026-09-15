@@ -1,0 +1,10 @@
+node_modules
+.data
+.devin
+.vercel
+build
+desktop-web
+release
+electron/dist
+.env
+*.local
