@@ -17,6 +17,8 @@ export type Student = {
   enrolled: string;
   annualFee: number;
   photo?: string; // Base64 data URL for student photo
+  /** Optional personal email — used as the student's portal login id when provided. */
+  email?: string;
 };
 
 export type ClassSection = {

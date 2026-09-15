@@ -4,8 +4,6 @@ import { createUser, editUser, getUsers, removeUser, resetUserPassword, toggleUs
 import { migrateLegacyUsers } from "@/lib/auth/migrate";
 import { DUTY_LABELS, ROLE_LABELS, type Role, type SafeUser, type StaffDuty } from "@/lib/auth/types";
 import { useAuth } from "@/lib/auth/store";
-import { api } from "@/lib/api";
-import type { Student } from "@/lib/types";
 
 const inputCls =
   "w-full rounded-xl border border-navy/15 bg-white px-3.5 py-2 text-sm text-navy outline-none transition-colors focus:border-gold focus:ring-2 focus:ring-gold/30";
@@ -44,17 +42,6 @@ export function UserManagement() {
   const [error, setError] = useState("");
   const [resetTarget, setResetTarget] = useState<SafeUser | null>(null);
   const [resetPassword, setResetPassword] = useState("");
-  const [students, setStudents] = useState<Student[]>([]);
-
-  async function loadSchoolRefs() {
-    try {
-      const res = await api.get<{ document: { students: Student[] } }>("/api/school");
-      const doc = res.data?.document;
-      setStudents(doc?.students ?? []);
-    } catch {
-      setStudents([]);
-    }
-  }
 
   async function refresh() {
     setLoading(true);
@@ -78,7 +65,6 @@ export function UserManagement() {
     setMode("create");
     setError("");
     setMessage("");
-    void loadSchoolRefs();
   }
 
   function openEdit(u: SafeUser) {
@@ -96,7 +82,6 @@ export function UserManagement() {
     setMode("edit");
     setError("");
     setMessage("");
-    void loadSchoolRefs();
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -359,26 +344,6 @@ export function UserManagement() {
                   </div>
                   <p className="mt-1 text-xs text-navy/55">
                     بدون اختصاص، لن يرى الموظف أي وحدة في نظام المدرسة حتى يتم تحديدها.
-                  </p>
-                </div>
-              ) : null}
-              {form.role === "student" ? (
-                <div>
-                  <label className={labelCls}>ربط بسجل الطالب (في بيانات المدرسة)</label>
-                  <select
-                    className={inputCls}
-                    value={form.studentId}
-                    onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-                  >
-                    <option value="">— بدون ربط —</option>
-                    {students.map((st) => (
-                      <option key={st.id} value={st.id}>
-                        {st.nameAr} ({st.nameFr}) — فصل {st.klass}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-navy/55">
-                    بدون هذا الربط لن تظهر بيانات الطالب في بوابة الطالب.
                   </p>
                 </div>
               ) : null}

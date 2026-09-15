@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createUserServer, listUsersSafe, requireAdminFromRequest, requireRegistrarOrAdminFromRequest } from "@/server/auth";
+import { createUserServer, listUsersSafe, requireAdminFromRequest, requireRegistrarOrAdminFromRequest, upsertStudentUserServer } from "@/server/auth";
 import { ApiError, handle, jsonOk } from "@/server/http";
 import { type Role } from "@/lib/auth/types";
 
@@ -44,16 +44,35 @@ export const Route = createFileRoute("/api/users")({
             }
           }
 
+          const nameAr = typeof body.nameAr === "string" ? body.nameAr.trim() : "";
+          const nameEn = typeof body.nameEn === "string" ? body.nameEn.trim() : "";
+          const email = typeof body.email === "string" ? body.email.trim() : "";
+          const active = typeof body.active === "boolean" ? body.active : true;
+          const initialPassword = typeof body.initialPassword === "string" ? body.initialPassword : "";
+
+          // Bound student logins (registrar workspace): idempotent creation
+          // with optimistic login id generation when no email is provided.
+          if (role === "student" && studentId) {
+            const result = await upsertStudentUserServer(
+              { nameAr, nameEn, email, initialPassword, studentId, active },
+              actor,
+            );
+            return jsonOk({
+              user: result.user,
+              login: { email: result.email, password: result.password, created: result.created },
+            });
+          }
+
           const user = await createUserServer(
             {
-              email: typeof body.email === "string" ? body.email : "",
-              nameAr: typeof body.nameAr === "string" ? body.nameAr : "",
-              nameEn: typeof body.nameEn === "string" ? body.nameEn : "",
+              email,
+              nameAr,
+              nameEn,
               role,
-              active: typeof body.active === "boolean" ? body.active : true,
-              initialPassword: typeof body.initialPassword === "string" ? body.initialPassword : "",
+              active,
+              initialPassword,
               staffId: null,
-              studentId,
+              studentId: null,
               duties: [],
             },
             actor,

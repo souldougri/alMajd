@@ -317,6 +317,113 @@ export async function createUserServer(input: CreateUserInput, actor: SafeUser):
   });
 }
 
+// ---------------------------------------------------------------------------
+// Bound student logins (registrar workspace)
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_STUDENT_PASSWORD = "Student2026!";
+
+/**
+ * Builds the generated portal login id for a student record when the
+ * registrar does not provide a personal email (e.g. `s-abc123@madjd.local`).
+ */
+export function studentLoginId(studentId: string): string {
+  return `s-${studentId}@madjd.local`;
+}
+
+export type StudentLoginInput = {
+  nameAr: string;
+  nameEn?: string;
+  /** Optional personal email; when omitted a generated login id is used. */
+  email?: string;
+  /** Optional new password; preserved when omitted for an existing login. */
+  initialPassword?: string;
+  studentId: string;
+  active?: boolean;
+};
+
+export type StudentLoginResult = {
+  user: SafeUser;
+  /** The effective login id (email) for the student portal. */
+  email: string;
+  /** Effective password only when it was just created or reset; "" otherwise. */
+  password: string;
+  /** true when a brand-new bound login was created. */
+  created: boolean;
+};
+
+/**
+ * Idempotent bound-student login used by the registrar workspace: creating a
+ * student record in the school document is enough for that student to access
+ * the portal. When a bound login already exists its profile is refreshed;
+ * custom email/password changes are applied when explicitly provided.
+ */
+export async function upsertStudentUserServer(input: StudentLoginInput, actor: SafeUser): Promise<StudentLoginResult> {
+  const db = await getDb();
+  if (!input.studentId?.trim() || !input.nameAr.trim()) {
+    throw new ApiError("بيانات الطالب غير مكتملة", 400);
+  }
+
+  const studentId = input.studentId.trim();
+  const requestedPassword = input.initialPassword && input.initialPassword.length >= 6 ? input.initialPassword : "";
+  const now = new Date().toISOString();
+
+  const existing = await db.query("SELECT * FROM users WHERE student_id = $1 LIMIT 1", [studentId]);
+  if (existing.rows.length > 0) {
+    const row = existing.rows[0];
+    const id = String(row.id);
+    const currentEmail = String(row.email);
+    const requestedEmail = input.email?.trim() ? normalizeEmail(input.email) : currentEmail;
+    if (requestedEmail !== currentEmail) {
+      const clash = await db.query("SELECT id FROM users WHERE email = $1 AND id != $2", [requestedEmail, id]);
+      if (clash.rows.length > 0) {
+        throw new ApiError("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل");
+      }
+    }
+    const nextNameAr = input.nameAr.trim();
+    const nextNameEn = input.nameEn?.trim() || String(row.name_en ?? "") || nextNameAr;
+    await db.query(
+      "UPDATE users SET email = $1, name_ar = $2, name_en = $3, active = $4, updated_at = $5 WHERE id = $6",
+      [requestedEmail, nextNameAr, nextNameEn, input.active ?? true, now, id],
+    );
+    if (requestedPassword) {
+      await db.query("UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3", [hashPassword(requestedPassword), now, id]);
+      await writeAudit({
+        action: "user.reset_password",
+        actorId: actor.id,
+        actorName: actor.nameAr,
+        targetId: id,
+        targetName: nextNameAr,
+        detail: "password reset via registrar student login",
+      });
+    }
+    const freshRows = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+    return { user: toSafeUser(freshRows.rows[0]), email: requestedEmail, password: requestedPassword, created: false };
+  }
+
+  const password = requestedPassword || DEFAULT_STUDENT_PASSWORD;
+  const email = input.email?.trim() ? normalizeEmail(input.email) : studentLoginId(studentId);
+  const existingEmail = await db.query("SELECT id FROM users WHERE email = $1", [email]);
+  if (existingEmail.rows.length > 0) {
+    throw new ApiError("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل");
+  }
+
+  const safe = await createUserServer(
+    {
+      email,
+      nameAr: input.nameAr,
+      nameEn: input.nameEn ?? input.nameAr,
+      role: "student",
+      active: input.active ?? true,
+      initialPassword: password,
+      studentId,
+      duties: [],
+    },
+    actor,
+  );
+  return { user: safe, email: safe.email, password, created: true };
+}
+
 export async function updateUserServer(id: string, updates: UpdateUserInput, actor: SafeUser): Promise<SafeUser> {
   const db = await getDb();
   const current = await findUserById(id);

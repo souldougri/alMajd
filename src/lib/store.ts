@@ -45,7 +45,7 @@ type SchoolState = {
   setView: (view: ViewId) => void;
   select: (id: string | null) => void;
   setSchoolYear: (year: string) => void;
-  addStudent: (s: Omit<Student, "id">) => void;
+  addStudent: (s: Omit<Student, "id">) => Student;
   editStudent: (id: string, updates: Partial<Omit<Student, "id">>) => void;
   deleteStudent: (id: string) => void;
   addClass: (c: Omit<ClassSection, "id">) => void;
@@ -159,13 +159,16 @@ export const useSchool = create<SchoolState>()(
           syncToStorage(nextState);
           return { schoolYear: year };
         }),
-      addStudent: (s) =>
+      addStudent: (s) => {
+        const id = uid("s");
+        const student = { ...s, id };
         set((st) => {
-          const id = uid("s");
-          const nextStudents = [{ ...s, id }, ...st.students];
+          const nextStudents = [student, ...st.students];
           syncToStorage({ ...st, students: nextStudents });
           return { students: nextStudents, selectedId: id, view: "students" };
-        }),
+        });
+        return student;
+      },
       editStudent: (id, updates) =>
         set((st) => {
           const nextStudents = st.students.map((s) => (s.id === id ? { ...s, ...updates } : s));

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePrintDocs } from "@/components/desk/print";
-import { api } from "@/lib/api";
+import { ensureStudentLogin } from "@/lib/auth/users";
 import { money } from "@/lib/school";
 import { useSchool } from "@/lib/store";
 import { processPhotoFile } from "@/lib/utils";
@@ -35,12 +35,10 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
   const [payAmount, setPayAmount] = useState("50000");
   const [payNote, setPayNote] = useState("قسط");
   const [transferClassId, setTransferClassId] = useState("");
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("Student2026!");
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginError, setLoginError] = useState("");
-  const [loginCreated, setLoginCreated] = useState<string | null>(null);
+  const [loginResult, setLoginResult] = useState<{ studentId: string; email: string; password: string; created: boolean } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const filtered = useMemo(() => {
     const t = q.trim();
@@ -86,34 +84,35 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
     }
   };
 
-  async function handleCreateLogin(e: FormEvent) {
-    e.preventDefault();
-    if (!current) return;
-    if (loginCreated) {
-      setLoginOpen(false);
-      return;
-    }
+  async function createLogin(st: Student) {
     setLoginBusy(true);
     setLoginError("");
+    setLoginResult(null);
     try {
-      const res = await api.post<{ user: { email: string } }>("/api/users", {
-        nameAr: current.nameAr,
-        nameEn: current.nameFr || current.nameAr,
-        email: loginEmail.trim(),
-        role: "student",
-        active: true,
-        initialPassword: loginPassword,
-        studentId: current.id,
+      const r = await ensureStudentLogin({
+        studentId: st.id,
+        nameAr: st.nameAr,
+        nameEn: st.nameFr || st.nameAr,
+        email: st.email ?? "",
+        password: "",
       });
-      if (!res.ok || !res.data?.user) {
-        setLoginError(res.error ?? "فشل إنشاء الحساب");
-        return;
-      }
-      setLoginCreated(`${res.data.user.email}|${loginPassword}`);
-    } catch {
-      setLoginError("حدث خطأ غير متوقع أثناء إنشاء الحساب");
+      setLoginResult({ studentId: st.id, email: r.email, password: r.password, created: r.created });
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : "حدث خطأ أثناء إنشاء حساب الدخول");
     } finally {
       setLoginBusy(false);
+    }
+  }
+
+  async function copyCredentials() {
+    if (!loginResult) return;
+    const text = loginResult.password ? `البريد: ${loginResult.email}\nكلمة المرور: ${loginResult.password}` : `البريد: ${loginResult.email}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard unavailable — credentials stay visible on screen.
     }
   }
 
@@ -162,9 +161,17 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
       {open ? (
         <StudentForm
           onDone={() => { setOpen(false); setEditingId(null); }}
-          onSave={editingId ? (data) => editStudent(editingId, data) : (data) => addStudent(data as Omit<Student, "id">)}
+          onSave={(data) => {
+            if (editingId) {
+              editStudent(editingId, data);
+              return;
+            }
+            const created = addStudent(data as Omit<Student, "id">);
+            if (registrar) void createLogin(created);
+          }}
           student={editingStudent ?? undefined}
           classes={classes}
+          allowLoginEmail={registrar}
         />
       ) : null}
 
@@ -311,16 +318,37 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      setLoginEmail(`s-${current.id}@madjd.local`);
-                      setLoginPassword("Student2026!");
-                      setLoginError("");
-                      setLoginCreated(null);
-                      setLoginOpen(true);
-                    }}
+                    onClick={() => void createLogin(current)}
+                    disabled={loginBusy}
                   >
-                    إنشاء حساب دخول الطالب
+                    {loginBusy ? "جارٍ إنشاء الحساب…" : "إنشاء حساب دخول الطالب"}
                   </Button>
+                  {loginError ? (
+                    <p className="rounded-md bg-danger/10 p-3 text-xs text-danger">{loginError}</p>
+                  ) : null}
+                  {current && loginResult && loginResult.studentId === current.id ? (
+                    <div className="rounded-md border border-success/30 bg-success/10 p-3 text-xs">
+                      <p className="font-semibold text-success">
+                        {loginResult.created ? "تم إنشاء حساب دخول الطالب" : "حساب الدخول موجود بالفعل"}
+                      </p>
+                      <p className="mt-1.5">
+                        البريد: <span dir="ltr" className="font-mono">{loginResult.email}</span>
+                      </p>
+                      {loginResult.password ? (
+                        <p className="mt-1">
+                          كلمة المرور: <span dir="ltr" className="font-mono">{loginResult.password}</span>
+                        </p>
+                      ) : null}
+                      <p className="mt-1 text-fg-muted">سلّم هذه المعطيات للطالب للدخول إلى بوابة الطالب.</p>
+                      <button
+                        type="button"
+                        onClick={() => void copyCredentials()}
+                        className="mt-2 rounded-full bg-success px-3 py-1 text-xs font-semibold text-white"
+                      >
+                        {copied ? "تم النسخ ✓" : "نسخ المعطيات"}
+                      </button>
+                    </div>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -434,42 +462,6 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
         )}
       </div>
 
-      {loginOpen && current ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-surface p-6 shadow-[var(--shadow-window)]">
-            <h3 className="text-lg font-semibold">إنشاء حساب دخول — {current.nameAr}</h3>
-            <form className="mt-4 grid gap-3" onSubmit={handleCreateLogin}>
-              <div className="grid gap-1">
-                <Label className="text-xs">البريد الإلكتروني (مقترح تلقائيًا)</Label>
-                <Input dir="ltr" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
-              </div>
-              <div className="grid gap-1">
-                <Label className="text-xs">كلمة المرور الأولية</Label>
-                <Input dir="ltr" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required minLength={6} />
-              </div>
-              {loginError ? <p className="text-xs text-danger">{loginError}</p> : null}
-              {loginCreated ? (
-                <p className="rounded-md bg-success/10 p-3 text-xs text-success">
-                  تم إنشاء الحساب بنجاح. سلّم هذه المعطيات لولي الأمر:
-                  <br />
-                  البريد: <span dir="ltr">{loginCreated.split("|")[0]}</span>
-                  <br />
-                  كلمة المرور: <span dir="ltr">{loginCreated.split("|")[1]}</span>
-                </p>
-              ) : null}
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setLoginOpen(false)}>
-                  إغلاق
-                </Button>
-                <Button size="sm" type="submit" disabled={loginBusy}>
-                  {loginBusy ? "جارٍ الإنشاء…" : loginCreated ? "تم — إغلاق" : "إنشاء الحساب"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
-
       {deleteConfirmId && (
         <DeleteConfirmDialog
           student={students.find((s) => s.id === deleteConfirmId)!}
@@ -495,11 +487,13 @@ function StudentForm({
   onSave,
   student,
   classes,
+  allowLoginEmail,
 }: {
   onDone: () => void;
   onSave: (s: Partial<Student>) => void;
   student?: Student;
   classes: Array<{ id: string; nameAr: string; active: boolean }>;
+  allowLoginEmail?: boolean;
 }) {
   const [nameAr, setNameAr] = useState(student?.nameAr ?? "");
   const [nameFr, setNameFr] = useState(student?.nameFr ?? "");
@@ -509,6 +503,7 @@ function StudentForm({
   const [placeOfBirth, setPlaceOfBirth] = useState(student?.placeOfBirth ?? "");
   const [parentAr, setParentAr] = useState(student?.parentAr ?? "");
   const [phone, setPhone] = useState(student?.phone ?? "");
+  const [email, setEmail] = useState(student?.email ?? "");
   const [annualFee, setAnnualFee] = useState(String(student?.annualFee ?? 180000));
   const [photo, setPhoto] = useState<string | undefined>(student?.photo);
   const [photoError, setPhotoError] = useState<string | undefined>();
@@ -548,7 +543,7 @@ function StudentForm({
       return;
     }
     const selectedClass = classes.find((c) => c.id === classId);
-    onSave({
+    const payload: Partial<Student> = {
       nameAr: nameAr.trim(),
       nameFr: nameFr.trim() || nameAr.trim(),
       gender: "male",
@@ -561,7 +556,9 @@ function StudentForm({
       enrolled: student?.enrolled ?? new Date().toISOString().slice(0, 10),
       annualFee: Number(annualFee) || 180000,
       photo,
-    });
+    };
+    if (allowLoginEmail) payload.email = email.trim() || undefined;
+    onSave(payload);
     onDone();
   }
 
@@ -608,6 +605,16 @@ function StudentForm({
       <Field label="الهاتف">
         <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
       </Field>
+      {allowLoginEmail ? (
+        <Field label="البريد الإلكتروني (حساب الدخول)">
+          <Input
+            dir="ltr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="اختياري — يُولَّد تلقائيًا إن تُرك فارغًا"
+          />
+        </Field>
+      ) : null}
       <Field label="الرسوم السنوية">
         <Input value={annualFee} onChange={(e) => setAnnualFee(e.target.value)} inputMode="numeric" />
       </Field>

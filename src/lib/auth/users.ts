@@ -45,6 +45,43 @@ export async function createUser(input: UserInput, _actor: SafeUser): Promise<Sa
   return res.data?.user as SafeUser;
 }
 
+export type StudentLoginResult = {
+  user: SafeUser;
+  email: string;
+  password: string;
+  created: boolean;
+};
+
+/**
+ * Creates (or refreshes) the bound portal login for a student record
+ * (registrar workspace). The server generates a login id when no email is
+ * provided and returns the credentials so the registrar can share them.
+ */
+export async function ensureStudentLogin(input: {
+  studentId: string;
+  nameAr: string;
+  nameEn?: string;
+  email?: string;
+  password?: string;
+}): Promise<StudentLoginResult> {
+  const res = await api.post<{ user: SafeUser; login?: { email: string; password: string; created: boolean } }>("/api/users", {
+    studentId: input.studentId,
+    nameAr: input.nameAr,
+    nameEn: input.nameEn ?? input.nameAr,
+    email: input.email ?? "",
+    role: "student",
+    active: true,
+    initialPassword: input.password ?? "",
+  });
+  if (!res.ok) throw new Error(res.error ?? "فشل إنشاء حساب الدخول");
+  return {
+    user: res.data?.user as SafeUser,
+    email: res.data?.login?.email ?? ((res.data?.user as SafeUser | undefined)?.email ?? ""),
+    password: res.data?.login?.password ?? "",
+    created: res.data?.login?.created ?? false,
+  };
+}
+
 /** Updates a user's name/email/role/active (requires super_admin). */
 export async function editUser(id: string, updates: UserUpdates, _actor: SafeUser): Promise<SafeUser> {
   const res = await api.put<{ user: SafeUser }>(`/api/users/${encodeURIComponent(id)}`, updates);
