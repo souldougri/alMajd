@@ -23,8 +23,8 @@
     "icons": "node scripts/build-icon.mjs",
     "electron:compile": "tsc -p electron/tsconfig.json -outDir electron/dist && node scripts/ensure-cjs.mjs",
     "electron:dev": "npm run icons && npm run electron:compile && concurrently -k -s first \"vite --host 127.0.0.1 --port 8080\" \"cross-env ELECTRON_START_URL=http://127.0.0.1:8080 electron electron/dist/main.js\"",
-    "electron:build": "npm run icons && npm run electron:compile && npm run build:portal && node scripts/build-electron-web.mjs && electron-builder --win nsis",
-    "electron:build:dir": "npm run icons && npm run electron:compile && npm run build:portal && node scripts/build-electron-web.mjs && electron-builder --dir"
+    "electron:build": "npm run icons && npm run electron:compile && electron-builder --win nsis",
+    "electron:build:dir": "npm run icons && npm run electron:compile && electron-builder --dir"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -121,7 +121,6 @@
     },
     "files": [
       "electron/dist/**/*",
-      "desktop-web/**/*",
       "build/**/*",
       "package.json",
       "!node_modules/**/*"
