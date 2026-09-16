@@ -46,7 +46,7 @@ function LoginPage() {
       </div>
 
       <main className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl shadow-navy/10 ring-1 ring-gold/15">
+        <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl shadow-navy/10 ring-1 ring-gold/15 sm:p-8">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-navy">
               <img

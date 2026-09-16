@@ -239,11 +239,11 @@ export function TeacherShell() {
           </section>
         ) : (
           <>
-            <div className="mt-6 flex gap-2">
+            <div className="mt-6 grid grid-cols-2 gap-2 md:flex">
               <button
                 type="button"
                 onClick={() => setTab("grades")}
-                className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-colors md:min-h-0 md:rounded-full md:py-2 ${
                   tab === "grades" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
                 }`}
               >
@@ -253,7 +253,7 @@ export function TeacherShell() {
               <button
                 type="button"
                 onClick={() => setTab("schedule")}
-                className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-colors md:min-h-0 md:rounded-full md:py-2 ${
                   tab === "schedule" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
                 }`}
               >
@@ -263,7 +263,7 @@ export function TeacherShell() {
               <button
                 type="button"
                 onClick={() => setTab("docs")}
-                className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-colors md:min-h-0 md:rounded-full md:py-2 ${
                   tab === "docs" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
                 }`}
               >

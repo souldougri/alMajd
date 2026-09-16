@@ -70,7 +70,7 @@ export function AppHeader({ nav }: { nav?: AppNav }) {
               aria-label="القائمة"
               aria-expanded={menuOpen}
               aria-controls="app-drawer"
-              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold lg:hidden"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold lg:hidden"
             >
               <Menu className="size-5" />
             </button>
@@ -121,7 +121,7 @@ export function AppHeader({ nav }: { nav?: AppNav }) {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90"
+            className="flex min-h-11 items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90"
           >
             <LogOut className="size-3.5" />
             <span>خروج</span>

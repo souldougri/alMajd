@@ -46,14 +46,13 @@ export function PortalLanding() {
           <p className="text-sm text-white/75">{SCHOOL.motto}</p>
         </div>
 
-        <Link
-          to="/login"
-          search={{ redirect: undefined }}
+        <a
+          href="/login"
           className="mt-2 flex items-center gap-2 rounded-full bg-gold px-10 py-3.5 text-lg font-bold text-navy transition-opacity hover:opacity-90"
         >
           <LogIn className="size-5" />
           دخول
-        </Link>
+        </a>
       </div>
 
       <p className="relative mt-12 text-xs text-white/50">

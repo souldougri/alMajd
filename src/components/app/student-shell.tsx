@@ -199,68 +199,25 @@ export function StudentShell() {
           </div>
         </section>
 
-        {/* Tabs */}
-        <div className="mt-6 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setTab("results")}
-            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
-              tab === "results" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
-            }`}
-          >
-            <BookOpen className="size-4" />
-            النتائج
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("fees")}
-            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
-              tab === "fees" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
-            }`}
-          >
-            <Wallet className="size-4" />
-            الرسوم الدراسية
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("attendance")}
-            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
-              tab === "attendance" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
-            }`}
-          >
-            <CalendarDays className="size-4" />
-            الحضور
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("timetable")}
-            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
-              tab === "timetable" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
-            }`}
-          >
-            <Timer className="size-4" />
-            الجدول الزمني
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("warnings")}
-            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
-              tab === "warnings" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
-            }`}
-          >
-            <AlertTriangle className="size-4" />
-            الملاحظات
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("docs")}
-            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors ${
-              tab === "docs" ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
-            }`}
-          >
-            <FolderOpen className="size-4" />
-            المستندات
-          </button>
+        {/* Tabs — 2-col grid of large targets on mobile, inline pills on md+ */}
+        <div className="mt-6 grid grid-cols-2 gap-2 md:flex">
+          {tabItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                aria-current={tab === item.id ? "page" : undefined}
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-colors md:min-h-0 md:rounded-full md:py-2 ${
+                  tab === item.id ? "bg-navy text-gold" : "bg-white text-navy/70 hover:bg-white/70"
+                }`}
+              >
+                <Icon className="size-4 shrink-0" />
+                {item.label}
+              </button>
+            );
+          })}
         </div>
 
         {tab === "results" ? (
@@ -273,7 +230,7 @@ export function StudentShell() {
                     key={t.id}
                     type="button"
                     onClick={() => setTermId(t.id)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                    className={`flex min-h-11 items-center rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
                       termId === t.id ? "bg-navy text-gold" : "bg-bg-subtle text-navy/70 hover:bg-navy/10"
                     }`}
                   >

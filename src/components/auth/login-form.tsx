@@ -1,17 +1,15 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { AlertCircle, Eye, EyeOff, LogIn, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { ROLE_REDIRECTS, type Role } from "@/lib/auth/types";
 import { SCHOOL } from "@/lib/school";
 
 const inputCls =
-  "w-full rounded-xl border border-navy/15 bg-white px-4 py-2.5 text-sm text-navy outline-none transition-colors focus:border-gold focus:ring-2 focus:ring-gold/30";
+  "w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-sm text-navy outline-none transition-colors focus:border-gold focus:ring-2 focus:ring-gold/30";
 const labelCls = "mb-1.5 block text-sm font-semibold text-navy";
 
 export function LoginForm({ initialRedirect }: { initialRedirect?: string }) {
   const login = useAuth((s) => s.login);
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -51,11 +49,11 @@ export function LoginForm({ initialRedirect }: { initialRedirect?: string }) {
     }
     const role = useAuth.getState().getRole();
     if (!role) {
-      await navigate({ to: "/" });
+      window.location.assign("/");
       return;
     }
     const redirectTo = resolveRedirect(role);
-    await navigate({ to: redirectTo as never, replace: true });
+    window.location.assign(redirectTo);
   }
 
   return (
