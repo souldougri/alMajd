@@ -42,14 +42,16 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
   const [copied, setCopied] = useState(false);
 
   const filtered = useMemo(() => {
+    let list = students;
+    if (rosterClassId) list = list.filter((s) => s.classId === rosterClassId);
     const t = q.trim();
-    if (!t) return students;
-    return students.filter(
+    if (!t) return list;
+    return list.filter(
       (s) => s.nameAr.includes(t) || s.nameFr.toLowerCase().includes(t.toLowerCase()) || s.klass.includes(t),
     );
-  }, [q, students]);
+  }, [q, students, rosterClassId]);
 
-  const current = students.find((s) => s.id === selectedId) ?? filtered[0];
+  const current = filtered.find((s) => s.id === selectedId) ?? filtered[0];
   const editingStudent = editingId ? students.find((s) => s.id === editingId) : null;
 
   const absenceSummary = useMemo(() => {
@@ -134,9 +136,9 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
             className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
             value={rosterClassId}
             onChange={(e) => setRosterClassId(e.target.value)}
-            aria-label="فصل القائمة"
+            aria-label="تصفية الفصل"
           >
-            <option value="">— فصل القائمة —</option>
+            <option value="">— كل الفصول —</option>
             {classes
               .filter((c) => c.active)
               .map((c) => (
@@ -186,6 +188,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
           student={editingStudent ?? undefined}
           classes={classes}
           allowLoginEmail={registrar}
+          defaultClassId={rosterClassId || undefined}
         />
       ) : null}
 
@@ -539,17 +542,21 @@ function StudentForm({
   student,
   classes,
   allowLoginEmail,
+  defaultClassId,
 }: {
   onDone: () => void;
   onSave: (s: Partial<Student>) => void;
   student?: Student;
   classes: Array<{ id: string; nameAr: string; active: boolean }>;
   allowLoginEmail?: boolean;
+  defaultClassId?: string;
 }) {
   const [nameAr, setNameAr] = useState(student?.nameAr ?? "");
   const [nameFr, setNameFr] = useState(student?.nameFr ?? "");
-  const [klass, setKlass] = useState<string>(student?.klass ?? classes[0]?.nameAr ?? "");
-  const [classId, setClassId] = useState<string>(student?.classId ?? classes[0]?.id ?? "");
+  const [klass, setKlass] = useState<string>(
+    student?.klass ?? classes.find((c) => c.id === defaultClassId)?.nameAr ?? classes[0]?.nameAr ?? "",
+  );
+  const [classId, setClassId] = useState<string>(student?.classId ?? defaultClassId ?? classes[0]?.id ?? "");
   const [dob, setDob] = useState(student?.dob ?? "");
   const [placeOfBirth, setPlaceOfBirth] = useState(student?.placeOfBirth ?? "");
   const [parentAr, setParentAr] = useState(student?.parentAr ?? "");

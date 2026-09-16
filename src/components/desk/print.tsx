@@ -2,10 +2,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { SchoolSeal } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,12 +75,17 @@ export function PrintProvider({ children }: { children: ReactNode }) {
 
   const closePrint = useCallback(() => setJob(null), []);
 
+  useEffect(() => {
+    document.body.classList.toggle("print-open", Boolean(job));
+    return () => document.body.classList.remove("print-open");
+  }, [job]);
+
   const value = useMemo(() => ({ job, openPrint, closePrint }), [job, openPrint, closePrint]);
 
   return (
     <PrintContext.Provider value={value}>
       {children}
-      {job ? <PrintStage key={printJobKey(job)} job={job} onClose={closePrint} /> : null}
+      {job ? createPortal(<PrintStage key={printJobKey(job)} job={job} onClose={closePrint} />, document.body) : null}
     </PrintContext.Provider>
   );
 }

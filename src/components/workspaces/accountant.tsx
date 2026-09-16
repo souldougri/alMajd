@@ -75,10 +75,17 @@ function AccountantTabs() {
 
 function OutstandingPanel() {
   const students = useSchool((s) => s.students);
+  const classes = useSchool((s) => s.classes);
   const paidOf = useSchool((s) => s.paidOf);
+  const [classId, setClassId] = useState("");
+
+  const classStudents = useMemo(
+    () => classId ? students.filter((s) => s.classId === classId) : students,
+    [students, classId],
+  );
 
   const rows = useMemo(() => {
-    return students
+    return classStudents
       .map((s) => {
         const paid = paidOf(s.id);
         return {
@@ -89,15 +96,15 @@ function OutstandingPanel() {
       })
       .filter((r) => r.remaining > 0)
       .sort((a, b) => b.remaining - a.remaining);
-  }, [students, paidOf]);
+  }, [classStudents, paidOf]);
 
   const totals = useMemo(
     () => ({
-      due: students.reduce((n, s) => n + s.annualFee, 0),
-      paid: students.reduce((n, s) => n + paidOf(s.id), 0),
-      remaining: students.reduce((n, s) => n + Math.max(0, s.annualFee - paidOf(s.id)), 0),
+      due: classStudents.reduce((n, s) => n + s.annualFee, 0),
+      paid: classStudents.reduce((n, s) => n + paidOf(s.id), 0),
+      remaining: classStudents.reduce((n, s) => n + Math.max(0, s.annualFee - paidOf(s.id)), 0),
     }),
-    [students, paidOf],
+    [classStudents, paidOf],
   );
 
   return (
@@ -106,6 +113,24 @@ function OutstandingPanel() {
         <StatCard label="مستحق (الرسوم السنوية)" value={money(totals.due)} />
         <StatCard label="المحصّل" value={money(totals.paid)} tone="ok" />
         <StatCard label="المتبقي" value={money(totals.remaining)} tone={totals.remaining > 0 ? "warn" : "ok"} />
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Label className="text-sm">تصفية حسب الفصل</Label>
+        <select
+          className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          value={classId}
+          onChange={(e) => setClassId(e.target.value)}
+          aria-label="تصفية حسب الفصل"
+        >
+          <option value="">— كل الفصول —</option>
+          {classes
+            .filter((c) => c.active)
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nameAr}
+              </option>
+            ))}
+        </select>
       </div>
       <div className="overflow-x-auto rounded-2xl border border-navy/10">
         <table className="w-full text-right text-sm">

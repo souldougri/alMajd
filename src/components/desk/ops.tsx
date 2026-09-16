@@ -75,15 +75,22 @@ export function AttendanceView() {
 
 export function FeesView() {
   const students = useSchool((s) => s.students);
+  const classes = useSchool((s) => s.classes);
   const payments = useSchool((s) => s.payments);
   const feeTypes = useSchool((s) => s.feeTypes);
   const addPayment = useSchool((s) => s.addPayment);
   const paidOf = useSchool((s) => s.paidOf);
   const { openPrint } = usePrintDocs();
+  const [classId, setClassId] = useState("");
   const [sid, setSid] = useState(students[0]?.id ?? "");
   const [amount, setAmount] = useState("50000");
   const [note, setNote] = useState("قسط");
   const [ftId, setFtId] = useState("");
+
+  const filteredStudents = useMemo(
+    () => classId ? students.filter((s) => s.classId === classId) : students,
+    [students, classId],
+  );
 
   const student = students.find((s) => s.id === sid);
 
@@ -136,17 +143,46 @@ export function FeesView() {
         </div>
         <div className="grid gap-1.5 sm:col-span-2">
           <Label>الطالب</Label>
-          <select
-            className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
-            value={sid}
-            onChange={(e) => setSid(e.target.value)}
-          >
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nameAr} — {s.klass}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              className="h-11 flex-1 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+              value={classId}
+              onChange={(e) => {
+                setClassId(e.target.value);
+                const next = (e.target.value
+                  ? students.filter((s) => s.classId === e.target.value)
+                  : students)[0]?.id;
+                setSid(next ?? "");
+              }}
+              aria-label="تصفية حسب الفصل"
+            >
+              <option value="">— كل الفصول —</option>
+              {classes
+                .filter((c) => c.active)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nameAr}
+                  </option>
+                ))}
+            </select>
+            <select
+              className="h-11 flex-1 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+              value={sid}
+              onChange={(e) => setSid(e.target.value)}
+            >
+              {filteredStudents.length === 0 ? (
+                <option value="" disabled>
+                  لا يوجد طلاب
+                </option>
+              ) : (
+                filteredStudents.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nameAr} — {s.klass}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
         </div>
         <div className="grid gap-1.5">
           <Label>المبلغ</Label>

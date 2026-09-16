@@ -348,6 +348,7 @@
   .print-only {
     display: block !important;
   }
+  body.print-open .app-frame,
   body:has(.print-sheet) .app-frame {
     display: none !important;
   }
@@ -362,7 +363,7 @@
     margin: 0;
     width: auto;
     min-height: auto;
-    padding: 0;
+    padding: 14mm;
     box-shadow: none;
   }
 }
