@@ -82,7 +82,9 @@ export function TeacherShell() {
     const orig: Record<string, number | null> = {};
     const savedSnapshot: Record<string, number | null> = {};
     for (const student of currentClass?.students ?? []) {
-      const g = (currentClass?.grades ?? []).find((x) => x.studentId === student.id);
+      const g = (currentClass?.grades ?? []).find(
+        (x) => x.studentId === student.id && x.subjectId === subjectId && x.termId === termId,
+      );
       if (g && typeof g.score === "number") {
         next[student.id] = String(g.score);
         orig[student.id] = g.score;

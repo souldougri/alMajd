@@ -34,7 +34,7 @@ export function Modal({ open, onClose, children, className, size = "md" }: Modal
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
         className={cn(
-          "flex max-h-[85dvh] w-full flex-col overflow-hidden rounded-lg bg-surface shadow-[var(--shadow-window)]",
+          "flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-lg bg-surface shadow-[var(--shadow-window)]",
           sizeClasses[size],
           className,
         )}
@@ -47,11 +47,11 @@ export function Modal({ open, onClose, children, className, size = "md" }: Modal
 }
 
 export function ModalHeader({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("shrink-0 px-6 pt-5 pb-2", className)}>{children}</div>;
+  return <div className={cn("shrink-0 overflow-hidden px-6 pt-5 pb-2", className)}>{children}</div>;
 }
 
 export function ModalContent({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("flex-1 overflow-y-auto px-6 py-3", className)}>{children}</div>;
+  return <div className={cn("min-h-0 flex-1 overflow-y-auto px-6 py-3", className)}>{children}</div>;
 }
 
 export function ModalFooter({ children, className }: { children: ReactNode; className?: string }) {

@@ -148,8 +148,18 @@ export async function upsertTeacherGrade(
     throw new ApiError("هذه المادة غير موكلة إليك");
   }
 
+  // The teacher must belong to the class exactly as the portfolio shows it:
+  // either they are the head teacher, or they own a subject targeting the
+  // class. Mirrors getTeacherPortfolio so everything the teacher sees in the
+  // UI is actually saveable (previously subject-only teachers were rejected).
   const teacherClass = doc.classes.find(
-    (c) => c.active && c.teacherStaffId === user.id && (!subject.classId || c.id === subject.classId),
+    (c) =>
+      c.active &&
+      (!subject.classId || c.id === subject.classId) &&
+      (c.teacherStaffId === user.id ||
+        doc.subjects.some(
+          (s) => s.active && s.teacherStaffId === user.id && (!s.classId || s.classId === c.id),
+        )),
   );
   if (!teacherClass) {
     throw new ApiError("هذه المادة ليست ضمن الفصول الموكلة إليك");
@@ -185,6 +195,11 @@ export async function upsertTeacherGrade(
       date: new Date().toISOString().slice(0, 10),
     });
   }
+
+  // CRITICAL: persist the mutated grade list back into the document.
+  // Previously the array was built but never assigned, so the DB stayed
+  // unchanged while the response claimed success.
+  doc.grades = nextGrades;
 
   await saveSchoolDocumentRow(doc, doc.schemaVersion);
 

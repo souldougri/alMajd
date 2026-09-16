@@ -258,22 +258,22 @@ export function UserManagement() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-1">
-                      <button type="button" title="تعديل" className="rounded-lg p-2 text-navy/60 hover:bg-navy hover:text-gold" onClick={() => openEdit(u)}>
+                    <div className="grid grid-cols-2 gap-1 sm:flex sm:items-center sm:justify-center sm:gap-1">
+                      <button type="button" title="تعديل" className="flex size-11 items-center justify-center rounded-lg text-navy/60 hover:bg-navy hover:text-gold" onClick={() => openEdit(u)}>
                         <Pencil className="size-4" />
                       </button>
-                      <button type="button" title="إعادة تعيين كلمة المرور" className="rounded-lg p-2 text-navy/60 hover:bg-navy hover:text-gold" onClick={() => setResetTarget(u)}>
+                      <button type="button" title="إعادة تعيين كلمة المرور" className="flex size-11 items-center justify-center rounded-lg text-navy/60 hover:bg-navy hover:text-gold" onClick={() => setResetTarget(u)}>
                         <KeyRound className="size-4" />
                       </button>
                       <button
                         type="button"
                         title={u.active ? "تعطيل" : "تفعيل"}
-                        className="rounded-lg p-2 text-navy/60 hover:bg-navy hover:text-gold"
+                        className="flex size-11 items-center justify-center rounded-lg text-navy/60 hover:bg-navy hover:text-gold"
                         onClick={() => handleToggle(u)}
                       >
                         {u.active ? <UserX className="size-4" /> : <UserCheck className="size-4" />}
                       </button>
-                      <button type="button" title="حذف" className="rounded-lg p-2 text-danger/70 hover:bg-danger hover:text-white" onClick={() => handleDelete(u)}>
+                      <button type="button" title="حذف" className="flex size-11 items-center justify-center rounded-lg text-danger/70 hover:bg-danger hover:text-white" onClick={() => handleDelete(u)}>
                         <Trash2 className="size-4" />
                       </button>
                     </div>
@@ -287,126 +287,124 @@ export function UserManagement() {
 
       {mode ? (
         <Modal open={Boolean(mode)} onClose={() => setMode(null)} size="md">
-          <form onSubmit={handleSubmit} className="flex max-h-full flex-col">
-            <ModalHeader>
-              <h3 className="font-display text-xl font-bold text-navy">
-                {mode === "create" ? "إنشاء حساب جديد" : "تعديل الحساب"}
-              </h3>
-            </ModalHeader>
-            <ModalContent>
-              <div className="space-y-4">
-                <div>
-                  <label className={labelCls}>الاسم بالعربية *</label>
-                  <input className={inputCls} value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} required />
-                </div>
-                <div>
-                  <label className={labelCls}>الاسم باللاتينية</label>
-                  <input className={inputCls} dir="ltr" value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
-                </div>
-                <div>
-                  <label className={labelCls}>البريد الإلكتروني *</label>
-                  <input className={inputCls} dir="ltr" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-                </div>
-                <div>
-                  <label className={labelCls}>الدور</label>
-                  <select className={inputCls} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
-                    {(Object.keys(ROLE_LABELS) as Role[])
-                      .filter((r) => mode !== "create" || r !== "student")
-                      .map((r) => (
-                        <option key={r} value={r}>
-                          {ROLE_LABELS[r].ar}
-                        </option>
-                      ))}
-                  </select>
-                  {mode === "create" ? (
-                    <p className="mt-1 text-xs text-navy/55">
-                      يتم إنشاء حسابات الطلاب من وحدة التسجيل (أمين السجل) مع اسم مستخدم وكلمة مرور تلقائيين.
-                    </p>
-                  ) : null}
-                </div>
-                {form.role === "staff" ? (
-                  <div>
-                    <label className={labelCls}>اختصاصات الموظف (يمكن الاختيار المتعدد)</label>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {(Object.keys(DUTY_LABELS) as StaffDuty[]).map((d) => (
-                        <label
-                          key={d}
-                          className="flex cursor-pointer items-start gap-2 rounded-xl border border-navy/15 bg-white px-3 py-2.5 text-sm text-navy transition-colors hover:border-gold"
-                        >
-                          <input
-                            type="checkbox"
-                            className="mt-0.5"
-                            checked={form.duties.includes(d)}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                duties: e.target.checked
-                                  ? [...form.duties, d]
-                                  : form.duties.filter((x) => x !== d),
-                              })
-                            }
-                          />
-                          <span>
-                            <span className="block font-semibold">{DUTY_LABELS[d].ar}</span>
-                            <span className="block text-xs text-navy/50">{DUTY_LABELS[d].fr}</span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    <p className="mt-1 text-xs text-navy/55">
-                      بدون اختصاص، لن يرى الموظف أي وحدة في نظام المدرسة حتى يتم تحديدها.
-                    </p>
-                  </div>
-                ) : null}
-                {mode === "create" ? (
-                  <div>
-                    <label className={labelCls}>كلمة المرور الأولية *</label>
-                    <input className={inputCls} dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
-                  </div>
-                ) : (
-                  <label className="flex items-center gap-2 text-sm font-semibold text-navy">
-                    <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
-                    الحساب نشط
-                  </label>
-                )}
+          <ModalHeader>
+            <h3 className="font-display text-xl font-bold text-navy">
+              {mode === "create" ? "إنشاء حساب جديد" : "تعديل الحساب"}
+            </h3>
+          </ModalHeader>
+          <ModalContent>
+            <form id="user-form" onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className={labelCls}>الاسم بالعربية *</label>
+                <input className={inputCls} value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} required />
               </div>
+              <div>
+                <label className={labelCls}>الاسم باللاتينية</label>
+                <input className={inputCls} dir="ltr" value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>البريد الإلكتروني *</label>
+                <input className={inputCls} dir="ltr" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              </div>
+              <div>
+                <label className={labelCls}>الدور</label>
+                <select className={inputCls} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
+                  {(Object.keys(ROLE_LABELS) as Role[])
+                    .filter((r) => mode !== "create" || r !== "student")
+                    .map((r) => (
+                      <option key={r} value={r}>
+                        {ROLE_LABELS[r].ar}
+                      </option>
+                    ))}
+                </select>
+                {mode === "create" ? (
+                  <p className="mt-1 text-xs text-navy/55">
+                    يتم إنشاء حسابات الطلاب من وحدة التسجيل (أمين السجل) مع اسم مستخدم وكلمة مرور تلقائيين.
+                  </p>
+                ) : null}
+              </div>
+              {form.role === "staff" ? (
+                <div>
+                  <label className={labelCls}>اختصاصات الموظف (يمكن الاختيار المتعدد)</label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(Object.keys(DUTY_LABELS) as StaffDuty[]).map((d) => (
+                      <label
+                        key={d}
+                        className="flex cursor-pointer items-start gap-2 rounded-xl border border-navy/15 bg-white px-3 py-2.5 text-sm text-navy transition-colors hover:border-gold"
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-0.5"
+                          checked={form.duties.includes(d)}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              duties: e.target.checked
+                                ? [...form.duties, d]
+                                : form.duties.filter((x) => x !== d),
+                            })
+                          }
+                        />
+                        <span>
+                          <span className="block font-semibold">{DUTY_LABELS[d].ar}</span>
+                          <span className="block text-xs text-navy/50">{DUTY_LABELS[d].fr}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-navy/55">
+                    بدون اختصاص، لن يرى الموظف أي وحدة في نظام المدرسة حتى يتم تحديدها.
+                  </p>
+                </div>
+              ) : null}
+              {mode === "create" ? (
+                <div>
+                  <label className={labelCls}>كلمة المرور الأولية *</label>
+                  <input className={inputCls} dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
+                </div>
+              ) : (
+                <label className="flex items-center gap-2 text-sm font-semibold text-navy">
+                  <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
+                  الحساب نشط
+                </label>
+              )}
               {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
-            </ModalContent>
-            <ModalFooter>
-              <button type="button" className="rounded-full border border-navy/15 px-5 py-3 text-sm text-navy hover:bg-cream" onClick={() => setMode(null)}>
-                إلغاء
-              </button>
-              <button type="submit" className="rounded-full bg-gold px-5 py-3 text-sm font-bold text-navy">
-                حفظ
-              </button>
-            </ModalFooter>
-          </form>
+            </form>
+          </ModalContent>
+          <ModalFooter>
+            <button type="button" className="rounded-full border border-navy/15 px-5 py-3 text-sm text-navy hover:bg-cream" onClick={() => setMode(null)}>
+              إلغاء
+            </button>
+            <button type="submit" form="user-form" className="rounded-full bg-gold px-5 py-3 text-sm font-bold text-navy">
+              حفظ
+            </button>
+          </ModalFooter>
         </Modal>
       ) : null}
 
       {resetTarget ? (
         <Modal open={Boolean(resetTarget)} onClose={() => { setResetTarget(null); setResetPassword(""); }} size="sm">
-          <form onSubmit={submitReset} className="flex max-h-full flex-col">
-            <ModalHeader>
-              <h3 className="font-display text-lg font-bold text-navy">إعادة تعيين كلمة المرور</h3>
-              <p className="mt-1 text-sm text-navy/60">للمستخدم {resetTarget.nameAr} ({resetTarget.email})</p>
-            </ModalHeader>
-            <ModalContent>
+          <ModalHeader>
+            <h3 className="font-display text-lg font-bold text-navy">إعادة تعيين كلمة المرور</h3>
+            <p className="mt-1 text-sm text-navy/60">للمستخدم {resetTarget.nameAr} ({resetTarget.email})</p>
+          </ModalHeader>
+          <ModalContent>
+            <form id="reset-form" onSubmit={submitReset} className="space-y-4">
               <div>
                 <label className={labelCls}>كلمة المرور الجديدة</label>
                 <input className={inputCls} dir="ltr" type="text" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} minLength={6} required />
               </div>
               {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
-            </ModalContent>
-            <ModalFooter>
-              <button type="button" className="rounded-full border border-navy/15 px-5 py-3 text-sm text-navy hover:bg-cream" onClick={() => { setResetTarget(null); setResetPassword(""); }}>
-                إلغاء
-              </button>
-              <button type="submit" className="rounded-full bg-gold px-5 py-3 text-sm font-bold text-navy">
-                إعادة التعيين
-              </button>
-            </ModalFooter>
-          </form>
+            </form>
+          </ModalContent>
+          <ModalFooter>
+            <button type="button" className="rounded-full border border-navy/15 px-5 py-3 text-sm text-navy hover:bg-cream" onClick={() => { setResetTarget(null); setResetPassword(""); }}>
+              إلغاء
+            </button>
+            <button type="submit" form="reset-form" className="rounded-full bg-gold px-5 py-3 text-sm font-bold text-navy">
+              إعادة التعيين
+            </button>
+          </ModalFooter>
         </Modal>
       ) : null}
     </div>

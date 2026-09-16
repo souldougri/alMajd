@@ -6,6 +6,7 @@ import { ROLE_LABELS } from "@/lib/auth/types";
 import { useSchool } from "@/lib/store";
 import { SCHOOL } from "@/lib/school";
 import { NotificationBell } from "@/components/notifications/bell";
+import { useSchoolSync } from "@/lib/use-school-sync";
 import { cn } from "@/lib/utils";
 
 export type AppNavItem = {
@@ -32,6 +33,11 @@ export function AppHeader({ nav }: { nav?: AppNav }) {
   const setView = useSchool((s) => s.setView);
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Hydrate the school document from the server for every logged-in shell
+  // (admin/staff/dashboard included), so statistics render on first visit
+  // without needing to open another workspace first.
+  useSchoolSync();
 
   useEffect(() => {
     setMounted(true);

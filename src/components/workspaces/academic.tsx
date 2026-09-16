@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { WorkspaceFrame } from "@/components/workspaces/workspace-frame";
 import { DocumentsPanel } from "@/components/documents/documents-panel";
 import { SCHOOL, todayIso } from "@/lib/school";
+import { printOrExportPdf } from "@/lib/print-export";
 import { formatPrintDate } from "@/lib/print";
 import { useSchool } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -364,7 +365,7 @@ function TimetablePanel() {
               <Button size="sm" variant="outline" onClick={() => setPrintOpen(false)}>
                 إغلاق
               </Button>
-              <Button size="sm" onClick={() => window.print()}>
+              <Button size="sm" onClick={() => void printOrExportPdf({ rootSelector: ".print-sheet", filename: "timetable.pdf" })}>
                 طباعة
               </Button>
             </div>

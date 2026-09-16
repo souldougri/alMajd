@@ -25,6 +25,7 @@ import {
 } from "@/lib/print";
 import { SCHOOL, money } from "@/lib/school";
 import { useSchool } from "@/lib/store";
+import { printOrExportPdf } from "@/lib/print-export";
 import type { Warning } from "@/lib/types";
 
 export type PrintJob =
@@ -94,7 +95,16 @@ function printJobKey(job: PrintJob): string {
   return Object.values(job).join(":");
 }
 
-async function printWhenReady() {
+const DOC_FILE_NAMES: Record<PrintJob["kind"], string> = {
+  roster: "class-roster.pdf",
+  receipt: "fee-receipt.pdf",
+  bulletin: "report-card.pdf",
+  warning: "warning.pdf",
+  summons: "summons.pdf",
+  admission: "admission-certificate.pdf",
+};
+
+async function printWhenReady(kind: PrintJob["kind"]) {
   const root = document.querySelector(".print-sheet");
   const imgs = root ? Array.from(root.querySelectorAll("img")) : [];
   await Promise.all(
@@ -108,7 +118,8 @@ async function printWhenReady() {
             }),
     ),
   );
-  window.print();
+  // Desktop browsers & Electron: native print. Android: PDF of the same sheet.
+  await printOrExportPdf({ rootSelector: ".print-sheet", filename: DOC_FILE_NAMES[kind] });
 }
 
 function PrintStage({ job, onClose }: { job: PrintJob; onClose: () => void }) {
@@ -132,7 +143,7 @@ function PrintStage({ job, onClose }: { job: PrintJob; onClose: () => void }) {
           <Button size="sm" variant="outline" onClick={onClose}>
             إغلاق
           </Button>
-          <Button size="sm" onClick={() => void printWhenReady()}>
+          <Button size="sm" onClick={() => void printWhenReady(job.kind)}>
             طباعة
           </Button>
         </div>

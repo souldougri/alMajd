@@ -6,6 +6,7 @@ import { ConfirmDialog } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePrintDocs } from "@/components/desk/print";
+import { printOrExportPdf } from "@/lib/print-export";
 import { SCHOOL, money, todayIso } from "@/lib/school";
 import { useSchool } from "@/lib/store";
 import { writeAuditEntry } from "@/lib/audit";
@@ -252,7 +253,9 @@ export function CardsView() {
           <h1 className="font-display text-3xl font-bold text-primary">البطاقات المدرسية</h1>
           <p className="text-sm text-fg-muted">Cartes d'identité scolaires</p>
         </div>
-        <Button onClick={() => window.print()}>طباعة البطاقة</Button>
+        <Button onClick={() => void printOrExportPdf({ rootSelector: "#print-card", filename: "school-id-card.pdf" })}>
+          طباعة البطاقة
+        </Button>
       </div>
       <div className="no-print">
         <Label>اختر الطالب</Label>
@@ -277,7 +280,7 @@ function IdCard({ studentId }: { studentId: string }) {
   const s = useSchool((st) => st.students.find((x) => x.id === studentId));
   if (!s) return null;
   return (
-    <article className="mx-auto w-full max-w-md overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-window)]">
+    <article id="print-card" className="mx-auto w-full max-w-md overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-window)]">
       <div className="flex items-center gap-3 bg-primary px-4 py-3 text-primary-fg">
         <SchoolSeal className="size-12 bg-surface" />
         <div>
@@ -353,7 +356,9 @@ export function CertificatesView() {
           <h1 className="font-display text-3xl font-bold text-primary">الشهادات والكشوف</h1>
           <p className="text-sm text-fg-muted">Attestations officielles</p>
         </div>
-        <Button onClick={() => window.print()}>طباعة الشهادة</Button>
+        <Button onClick={() => void printOrExportPdf({ rootSelector: "#print-certificate", filename: "certificate.pdf" })}>
+          طباعة الشهادة
+        </Button>
       </div>
       <div className="no-print flex flex-wrap gap-3">
         <select
@@ -388,7 +393,7 @@ function Certificate({ studentId, kind }: { studentId: string; kind: CertKind })
   const s = useSchool((st) => st.students.find((x) => x.id === studentId));
   if (!s) return null;
   return (
-    <article className="mx-auto max-w-xl rounded-xl border-2 border-primary bg-paper p-8 text-ink shadow-[var(--shadow-window)]">
+    <article id="print-certificate" className="mx-auto max-w-xl rounded-xl border-2 border-primary bg-paper p-8 text-ink shadow-[var(--shadow-window)]">
       <div className="flex flex-col items-center gap-2 text-center">
         <SchoolSeal className="size-24" />
         <p className="text-sm text-fg-muted">{SCHOOL.countryAr}</p>
