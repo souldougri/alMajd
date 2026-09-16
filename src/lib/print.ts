@@ -11,6 +11,12 @@ export const GENDER_AR: Record<Student["gender"], string> = {
   female: "أنثى",
 };
 
+export function genderLabel(gender?: string): string {
+  if (gender === "male") return "ذكر";
+  if (gender === "female") return "أنثى";
+  return "—";
+}
+
 export function formatPrintDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return iso;

@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePrintDocs } from "@/components/desk/print";
@@ -9,7 +10,7 @@ import { writeAuditEntry } from "@/lib/audit";
 import { money } from "@/lib/school";
 import { useSchool } from "@/lib/store";
 import { processPhotoFile } from "@/lib/utils";
-import type { Student } from "@/lib/types";
+import type { Gender, Student } from "@/lib/types";
 
 export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } = {}) {
   const registrar = mode === "registrar";
@@ -205,6 +206,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
             <thead className="border-b border-border text-xs text-fg-muted">
               <tr>
                 <th className="px-3 py-3 text-right font-medium">الاسم</th>
+                <th className="px-3 py-3 text-right font-medium">الجنس</th>
                 <th className="px-3 py-3 text-right font-medium">الصف</th>
                 <th className="px-3 py-3 text-right font-medium">تاريخ الميلاد</th>
                 <th className="px-3 py-3 text-right font-medium">ولي الأمر</th>
@@ -231,6 +233,9 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                     <td className="px-3 py-3">
                       <p className="font-medium">{s.nameAr}</p>
                       <p className="text-xs text-fg-subtle">{s.nameFr}</p>
+                    </td>
+                    <td className="px-3 py-3">
+                      {s.gender === "male" ? "ذكر" : s.gender === "female" ? "أنثى" : "—"}
                     </td>
                     <td className="px-3 py-3">{s.klass}</td>
                     <td className="px-3 py-3">
@@ -273,6 +278,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
             <h2 className="mt-1 text-lg font-semibold">{current.nameAr}</h2>
             <p className="text-sm text-fg-muted">{current.nameFr}</p>
             <dl className="mt-4 space-y-2 text-sm">
+              <Row k="الجنس" v={current.gender === "male" ? "ذكر" : current.gender === "female" ? "أنثى" : "—"} />
               <Row k="الصف" v={current.klass} />
               <Row k="تاريخ الميلاد" v={current.dob || "—"} />
               <Row k="مكان الميلاد" v={current.placeOfBirth || "—"} />
@@ -517,8 +523,11 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
       </div>
 
       {deleteConfirmId && (
-        <DeleteConfirmDialog
-          student={students.find((s) => s.id === deleteConfirmId)!}
+        <ConfirmDialog
+          open={Boolean(deleteConfirmId)}
+          title="تأكيد الحذف"
+          description={`هل أنت متأكد من حذف الطالب ${students.find((s) => s.id === deleteConfirmId)?.nameAr ?? ""}؟ سيتم حذف جميع سجلات الدفعات والإنذارات والحضور المرتبطة بهذا الطالب.`}
+          confirmLabel="نعم، احذف"
           onConfirm={confirmDelete}
           onCancel={() => setDeleteConfirmId(null)}
         />
@@ -553,6 +562,7 @@ function StudentForm({
 }) {
   const [nameAr, setNameAr] = useState(student?.nameAr ?? "");
   const [nameFr, setNameFr] = useState(student?.nameFr ?? "");
+  const [gender, setGender] = useState<Gender | "">(student?.gender ?? "");
   const [klass, setKlass] = useState<string>(
     student?.klass ?? classes.find((c) => c.id === defaultClassId)?.nameAr ?? classes[0]?.nameAr ?? "",
   );
@@ -600,11 +610,15 @@ function StudentForm({
       window.alert("مكان الميلاد مطلوب. يرجى إدخاله قبل الحفظ.");
       return;
     }
+    if (!gender) {
+      window.alert("يرجى تحديد الجنس قبل الحفظ.");
+      return;
+    }
     const selectedClass = classes.find((c) => c.id === classId);
     const payload: Partial<Student> = {
       nameAr: nameAr.trim(),
       nameFr: nameFr.trim() || nameAr.trim(),
-      gender: "male",
+      gender,
       klass: selectedClass?.nameAr ?? klass,
       classId: classId,
       dob,
@@ -627,6 +641,32 @@ function StudentForm({
       </Field>
       <Field label="Nom (français)">
         <Input value={nameFr} onChange={(e) => setNameFr(e.target.value)} />
+      </Field>
+      <Field label="الجنس">
+        <div className="flex h-11 items-center gap-4 rounded-md bg-surface px-3 shadow-[var(--shadow-border)]">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="gender"
+              value="male"
+              checked={gender === "male"}
+              onChange={() => setGender("male")}
+              className="accent-primary"
+            />
+            ذكر
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="gender"
+              value="female"
+              checked={gender === "female"}
+              onChange={() => setGender("female")}
+              className="accent-primary"
+            />
+            أنثى
+          </label>
+        </div>
       </Field>
       <Field label="الصف">
         <select
@@ -717,38 +757,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     <div className="grid gap-1.5">
       <Label>{label}</Label>
       {children}
-    </div>
-  );
-}
-
-function DeleteConfirmDialog({
-  student,
-  onConfirm,
-  onCancel,
-}: {
-  student: Student;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-surface p-6 shadow-[var(--shadow-window)]">
-        <h3 className="text-lg font-semibold">تأكيد الحذف</h3>
-        <p className="mt-2 text-sm text-fg-muted">
-          هل أنت متأكد من حذف الطالب <span className="font-semibold">{student.nameAr}</span>؟
-        </p>
-        <p className="mt-1 text-xs text-fg-subtle">
-          سيتم حذف جميع سجلات الدفعات والإنذارات والحضور المرتبطة بهذا الطالب.
-        </p>
-        <div className="mt-4 flex gap-2 justify-end">
-          <Button variant="ghost" onClick={onCancel}>
-            إلغاء
-          </Button>
-          <Button variant="danger" onClick={onConfirm}>
-            نعم، احذف
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, type FormEvent, type ReactNode } from "re
 import { SchoolSeal } from "@/components/brand-mark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePrintDocs } from "@/components/desk/print";
@@ -304,6 +305,10 @@ function IdCard({ studentId }: { studentId: string }) {
         </div>
       </div>
       <dl className="border-t border-border px-4 py-3 text-sm">
+        <div className="flex justify-between gap-3 border-b border-border py-1.5">
+          <dt className="text-fg-subtle">الجنس</dt>
+          <dd>{s.gender === "male" ? "ذكر" : s.gender === "female" ? "أنثى" : "—"}</dd>
+        </div>
         <div className="flex justify-between gap-3 border-b border-border py-1.5">
           <dt className="text-fg-subtle">تاريخ الميلاد</dt>
           <dd>{s.dob || "—"}</dd>
@@ -627,9 +632,10 @@ export function ClassesView() {
       </div>
 
       {deleteConfirmId && (
-        <DeleteConfirmDialog
-          item={classes.find((c) => c.id === deleteConfirmId)!}
-          itemType="class"
+        <ConfirmDialog
+          open={Boolean(deleteConfirmId)}
+          title="تأكيد الحذف"
+          description={`هل أنت متأكد من حذف الفصل ${classes.find((c) => c.id === deleteConfirmId)?.nameAr ?? ""}؟`}
           onConfirm={confirmDelete}
           onCancel={() => setDeleteConfirmId(null)}
         />
@@ -882,9 +888,10 @@ export function SubjectsView() {
       </div>
 
       {deleteConfirmId && (
-        <DeleteConfirmDialog
-          item={subjects.find((s) => s.id === deleteConfirmId)!}
-          itemType="subject"
+        <ConfirmDialog
+          open={Boolean(deleteConfirmId)}
+          title="تأكيد الحذف"
+          description={`هل أنت متأكد من حذف المادة ${subjects.find((s) => s.id === deleteConfirmId)?.nameAr ?? ""}؟`}
           onConfirm={confirmDelete}
           onCancel={() => setDeleteConfirmId(null)}
         />
@@ -1028,40 +1035,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     <div className="grid gap-1.5">
       <Label>{label}</Label>
       {children}
-    </div>
-  );
-}
-
-function DeleteConfirmDialog({
-  item,
-  itemType,
-  onConfirm,
-  onCancel,
-}: {
-  item: ClassSection | Subject;
-  itemType: "class" | "subject";
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const itemName = item.nameAr;
-  const itemLabel = itemType === "class" ? "الفصل" : "المادة";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-surface p-6 shadow-[var(--shadow-window)]">
-        <h3 className="text-lg font-semibold">تأكيد الحذف</h3>
-        <p className="mt-2 text-sm text-fg-muted">
-          هل أنت متأكد من حذف {itemLabel} <span className="font-semibold">{itemName}</span>؟
-        </p>
-        <div className="mt-4 flex gap-2 justify-end">
-          <Button variant="ghost" onClick={onCancel}>
-            إلغاء
-          </Button>
-          <Button variant="danger" onClick={onConfirm}>
-            نعم، احذف
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

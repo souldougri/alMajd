@@ -112,6 +112,9 @@ function AdminDashboard() {
   const stats = useMemo(() => {
     const activeClasses = classes.filter((c) => c.active);
     const perClass = activeClasses.map((c) => ({ cls: c, count: students.filter((s) => s.classId === c.id).length })).filter((e) => e.count > 0);
+    const males = students.filter((s) => s.gender === "male").length;
+    const females = students.filter((s) => s.gender === "female").length;
+    const unknownGender = students.length - males - females;
     const due = students.reduce((n, s) => n + s.annualFee, 0);
     const paid = students.reduce((n, s) => n + paidOf(s.id), 0);
     const day = attendance[today] ?? {};
@@ -122,6 +125,9 @@ function AdminDashboard() {
     const expenseTotal = expenses.reduce((n, e) => n + e.amount, 0);
     return {
       perClass,
+      males,
+      females,
+      unknownGender,
       due,
       paid,
       outstanding: Math.max(0, due - paid),
@@ -145,7 +151,7 @@ function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="الطلاب المسجلون" value={String(students.length)} hint={`${stats.perClass.length} صف بخريطة أغلبية`} />
+        <StatTile label="الطلاب المسجلون" value={String(students.length)} hint={`ذكر ${stats.males} · أنثى ${stats.females}${stats.unknownGender > 0 ? ` · غير محدد ${stats.unknownGender}` : ""} — ${stats.perClass.length} صف`} />
         <StatTile label="حضور اليوم" value={stats.marked ? `${attendanceRate}%` : "—"} hint={`حاضر ${stats.present} · متأخر ${stats.late} · غائب ${stats.absent}`} tone={stats.marked ? (attendanceRate >= 90 ? "ok" : attendanceRate >= 70 ? "warn" : "bad") : undefined} />
         <StatTile label="المحصل من الرسوم" value={money(stats.paid)} hint={`متبقي ${money(stats.outstanding)} من ${money(stats.due)}`} />
         <StatTile label="الإنفاق المسجل" value={money(stats.expenseTotal)} hint={`${stats.recentExpenses.length > 0 ? `${stats.recentExpenses[0].category} — ${money(stats.recentExpenses[0].amount)}` : "لا نفقات بعد"}`} />

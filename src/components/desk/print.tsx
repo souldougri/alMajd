@@ -290,6 +290,7 @@ function RosterSheet({ classId }: { classId: string }) {
               <th>#</th>
               <th>الاسم بالعربية</th>
               <th>Nom</th>
+              <th>الجنس</th>
               <th>تاريخ الميلاد</th>
             </tr>
           </thead>
@@ -299,6 +300,7 @@ function RosterSheet({ classId }: { classId: string }) {
                 <td>{i + 1}</td>
                 <td>{s.nameAr}</td>
                 <td className="ltr">{s.nameFr}</td>
+                <td>{s.gender === "male" ? "ذكر" : s.gender === "female" ? "أنثى" : "—"}</td>
                 <td>{s.dob || "—"}</td>
               </tr>
             ))}

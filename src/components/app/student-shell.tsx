@@ -193,7 +193,7 @@ export function StudentShell() {
               <Badge tone={student.enrolled ? "ok" : "warn"}>
                 {student.enrolled ? "مسجل" : "غير مسجل"}
               </Badge>
-              <Badge>{GENDER_AR[student.gender]}</Badge>
+              {student.gender ? <Badge>{GENDER_AR[student.gender]}</Badge> : null}
               <Badge>الرسوم السنوية {money(student.annualFee)}</Badge>
             </div>
           </div>

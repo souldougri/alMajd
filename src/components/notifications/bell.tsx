@@ -58,7 +58,7 @@ export function NotificationBell() {
         type="button"
         onClick={openDropdown}
         aria-label="الإشعارات"
-        className="relative flex size-10 items-center justify-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
+        className="relative flex size-11 items-center justify-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
       >
         <Bell className="size-5" />
         {unread > 0 ? (
@@ -69,7 +69,7 @@ export function NotificationBell() {
       </button>
 
       {open ? (
-        <div className="absolute end-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-xl">
+        <div className="absolute end-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-xl">
           <div className="border-b border-navy/10 bg-cream px-4 py-3">
             <p className="font-bold text-navy">الإشعارات</p>
             <p className="text-xs text-navy/55">{unread > 0 ? `${unread} غير مقروء` : "جميع الإشعارات مقروءة"}</p>

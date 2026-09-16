@@ -55,6 +55,7 @@
     -moz-osx-font-smoothing: grayscale;
     background: var(--color-bg);
     color: var(--color-fg);
+    overflow-x: hidden;
   }
 
   body {
@@ -62,6 +63,7 @@
     background: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);
+    overflow-x: hidden;
   }
 
   h1,
