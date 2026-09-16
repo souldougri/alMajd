@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePrintDocs } from "@/components/desk/print";
-import { ensureStudentLogin } from "@/lib/auth/users";
+import { deactivateStudentLogin, ensureStudentLogin } from "@/lib/auth/users";
+import { writeAuditEntry } from "@/lib/audit";
 import { money } from "@/lib/school";
 import { useSchool } from "@/lib/store";
 import { processPhotoFile } from "@/lib/utils";
@@ -80,6 +81,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
   const confirmDelete = () => {
     if (deleteConfirmId) {
       deleteStudent(deleteConfirmId);
+      void deactivateStudentLogin(deleteConfirmId).catch(() => undefined);
       setDeleteConfirmId(null);
     }
   };
@@ -96,6 +98,10 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
         email: st.email ?? "",
         password: "",
       });
+      const fresh = useSchool.getState().students.find((x) => x.id === st.id);
+      if (fresh && (!fresh.email || fresh.email !== r.email)) {
+        editStudent(fresh.id, { email: r.email });
+      }
       setLoginResult({ studentId: st.id, email: r.email, password: r.password, created: r.created });
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : "حدث خطأ أثناء إنشاء حساب الدخول");
@@ -163,7 +169,15 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
           onDone={() => { setOpen(false); setEditingId(null); }}
           onSave={(data) => {
             if (editingId) {
+              const prev = editingStudent;
+              const changedClass = Boolean(prev && data.classId && prev.classId !== data.classId);
               editStudent(editingId, data);
+              void writeAuditEntry({
+                action: changedClass ? "class.transfer" : "student.update",
+                targetId: editingId,
+                targetName: data.nameAr ?? prev?.nameAr,
+                detail: changedClass ? `transferred to ${data.klass ?? ""}` : "student record updated",
+              });
               return;
             }
             const created = addStudent(data as Omit<Student, "id">);
@@ -289,6 +303,15 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
               ) : null}
               {registrar ? (
                 <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      openPrint({ kind: "admission", studentId: current.id, email: current.email })
+                    }
+                  >
+                    طباعة وثيقة القبول
+                  </Button>
                   <div className="grid gap-1">
                     <Label className="text-xs">تحويل الصف</Label>
                     <select
@@ -300,6 +323,12 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                         const cls = classes.find((c) => c.id === cid);
                         if (cls) {
                           editStudent(current.id, { classId: cls.id, klass: cls.nameAr });
+                          void writeAuditEntry({
+                            action: "class.transfer",
+                            targetId: current.id,
+                            targetName: current.nameAr,
+                            detail: `moved to ${cls.nameAr}`,
+                          });
                           setTransferClassId("");
                         }
                       }}
@@ -340,13 +369,29 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                         </p>
                       ) : null}
                       <p className="mt-1 text-fg-muted">سلّم هذه المعطيات للطالب للدخول إلى بوابة الطالب.</p>
-                      <button
-                        type="button"
-                        onClick={() => void copyCredentials()}
-                        className="mt-2 rounded-full bg-success px-3 py-1 text-xs font-semibold text-white"
-                      >
-                        {copied ? "تم النسخ ✓" : "نسخ المعطيات"}
-                      </button>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void copyCredentials()}
+                          className="rounded-full bg-success px-3 py-1 text-xs font-semibold text-white"
+                        >
+                          {copied ? "تم النسخ ✓" : "نسخ المعطيات"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openPrint({
+                              kind: "admission",
+                              studentId: current.id,
+                              email: loginResult.email,
+                              password: loginResult.password || undefined,
+                            })
+                          }
+                          className="rounded-full border border-success/50 px-3 py-1 text-xs font-semibold text-success"
+                        >
+                          طباعة وثيقة القبول
+                        </button>
+                      </div>
                     </div>
                   ) : null}
                 </>
@@ -406,6 +451,12 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                           return;
                         }
                         addPayment(current.id, amount, payNote.trim() || "قسط");
+                        void writeAuditEntry({
+                          action: "payment.add",
+                          targetId: current.id,
+                          targetName: current.nameAr,
+                          detail: `${money(amount)} — ${payNote.trim() || "قسط"}`,
+                        });
                         setPayOpen(false);
                         setPayAmount("50000");
                         setPayNote("قسط");

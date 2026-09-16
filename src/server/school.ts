@@ -4,7 +4,7 @@
  * Reads and writes the versioned school document stored server-side
  * (PostgreSQL or PGLite). Server-only module — never import from client code.
  */
-import { getSchoolDocumentRow, saveSchoolDocumentRow, uid } from "./auth";
+import { getSchoolDocumentRow, saveSchoolDocumentRow, uid, writeAudit } from "./auth";
 import { ApiError } from "./http";
 import type { SafeUser } from "@/lib/auth/types";
 import type { SchoolDatabaseDocument } from "@/lib/storage/types";
@@ -187,6 +187,15 @@ export async function upsertTeacherGrade(
   }
 
   await saveSchoolDocumentRow(doc, doc.schemaVersion);
+
+  await writeAudit({
+    action: "grade.entry",
+    actorId: user.id,
+    actorName: user.nameAr,
+    targetId: studentId,
+    targetName: student.nameAr,
+    detail: `${subject.nameAr} · ${term.nameAr} · ${String(body.score ?? "cleared")}/${maxScore}`,
+  });
 
   return {
     saved: true,

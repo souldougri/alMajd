@@ -82,6 +82,15 @@ export async function ensureStudentLogin(input: {
   };
 }
 
+/** Deactivates a student's portal login when their record is removed. */
+export async function deactivateStudentLogin(studentId: string): Promise<void> {
+  const res = await api.post<{ disabled: boolean }>("/api/users", {
+    disableLogin: true,
+    studentId,
+  });
+  if (!res.ok) throw new Error(res.error ?? "تعذر تعطيل حساب الدخول");
+}
+
 /** Updates a user's name/email/role/active (requires super_admin). */
 export async function editUser(id: string, updates: UserUpdates, _actor: SafeUser): Promise<SafeUser> {
   const res = await api.put<{ user: SafeUser }>(`/api/users/${encodeURIComponent(id)}`, updates);

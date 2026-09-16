@@ -324,8 +324,84 @@ export async function createUserServer(input: CreateUserInput, actor: SafeUser):
 export const DEFAULT_STUDENT_PASSWORD = "Student2026!";
 
 /**
+ * Best-effort Arabic → Latin transliteration used to derive a deterministic
+ * student username when no Latin (French) name is available.
+ */
+const ARABIC_LATIN: Record<string, string> = {
+  "أ": "a", "إ": "a", "ا": "a", "آ": "a", "ب": "b", "ت": "t", "ث": "th",
+  "ج": "j", "ح": "h", "خ": "kh", "د": "d", "ذ": "dh", "ر": "r", "ز": "z",
+  "س": "s", "ش": "sh", "ص": "s", "ض": "d", "ط": "t", "ظ": "z", "ع": "a",
+  "غ": "gh", "ف": "f", "ق": "q", "ك": "k", "ل": "l", "م": "m", "ن": "n",
+  "ه": "h", "و": "w", "ي": "y", "ى": "a", "ة": "a", "ء": "",
+};
+
+/** Strips tashkeel/diacritics then maps Arabic letters to Latin. */
+export function transliterateArabicName(name: string): string {
+  const stripped = name.replace(/[\u064B-\u0652\u0670\u0640]/g, "");
+  let out = "";
+  for (const ch of stripped) {
+    out += ARABIC_LATIN[ch] ?? ch;
+  }
+  return out;
+}
+
+/**
+ * Deterministic username from a student's name (e.g. "Ahmed Mohamed Ali" →
+ * `ahmed.ali`). Uses the Latin/French name when available, otherwise a
+ * transliteration of the Arabic name. Letters/digits are normalized to ASCII,
+ * spaces/separators to a single dot.
+ */
+export function generateStudentUsername(nameEn: string, nameAr: string): string {
+  const source = nameEn.trim() || transliterateArabicName(nameAr);
+  const parts = source
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+  let base = "student";
+  if (parts.length === 1) {
+    base = parts[0] ?? "";
+  } else if (parts.length >= 2) {
+    base = `${parts[0]}.${parts[parts.length - 1]}`;
+  }
+  base = base
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, "")
+    .replace(/[._-]{2,}/g, ".")
+    .replace(/^[._-]+|[._-]+$/g, "");
+  return base.slice(0, 40) || "student";
+}
+
+/** Finds the first free `{username}@madjd.local` login id (collision-safe). */
+export async function uniqueStudentLoginId(nameEn: string, nameAr: string): Promise<string> {
+  const db = await getDb();
+  const stem = generateStudentUsername(nameEn, nameAr);
+  let candidate = stem;
+  let n = 2;
+  for (;;) {
+    const email = `${candidate}@madjd.local`;
+    const clash = await db.query("SELECT id FROM users WHERE email = $1", [email]);
+    if (clash.rows.length === 0) return email;
+    candidate = `${stem}${n++}`;
+  }
+}
+
+/**
+ * Unique, human-readable generated password for a fresh student account.
+ * Uses a distraction-free alphabet (no 0/1/O/I/L) — 9 characters.
+ */
+export function generateStudentPassword(): string {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const bytes = randomBytes(9);
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) out += chars[bytes[i] % chars.length];
+  return out;
+}
+
+/**
  * Builds the generated portal login id for a student record when the
- * registrar does not provide a personal email (e.g. `s-abc123@madjd.local`).
+ * registrar does not provide a personal email. Kept for legacy generated
+ * logins (`s-abc123@madjd.local`) — new logins use name-based usernames.
  */
 export function studentLoginId(studentId: string): string {
   return `s-${studentId}@madjd.local`;
@@ -401,26 +477,44 @@ export async function upsertStudentUserServer(input: StudentLoginInput, actor: S
     return { user: toSafeUser(freshRows.rows[0]), email: requestedEmail, password: requestedPassword, created: false };
   }
 
-  const password = requestedPassword || DEFAULT_STUDENT_PASSWORD;
-  const email = input.email?.trim() ? normalizeEmail(input.email) : studentLoginId(studentId);
+  const email = input.email?.trim()
+    ? normalizeEmail(input.email)
+    : await uniqueStudentLoginId(input.nameEn ?? "", input.nameAr);
   const existingEmail = await db.query("SELECT id FROM users WHERE email = $1", [email]);
   if (existingEmail.rows.length > 0) {
     throw new ApiError("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل");
   }
 
-  const safe = await createUserServer(
-    {
-      email,
-      nameAr: input.nameAr,
-      nameEn: input.nameEn ?? input.nameAr,
-      role: "student",
-      active: input.active ?? true,
-      initialPassword: password,
-      studentId,
-      duties: [],
-    },
-    actor,
+  // Every new student gets a unique generated password — never a shared default.
+  const password = requestedPassword || generateStudentPassword();
+  const id = uid("usr");
+  const nameAr = input.nameAr.trim();
+  const nameEn = input.nameEn?.trim() || nameAr;
+  await db.query(
+    `INSERT INTO users (id, email, name_ar, name_en, role, password_hash, active, student_id, duties, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '', $9, $9)`,
+    [id, email, nameAr, nameEn, "student", hashPassword(password), input.active ?? true, studentId, now],
   );
+  await writeAudit({
+    action: "student.register",
+    actorId: actor.id,
+    actorName: actor.nameAr,
+    targetId: id,
+    targetName: nameAr,
+    detail: `student registered with login ${email}`,
+  });
+  const safe = toSafeUser({
+    id,
+    email,
+    name_ar: nameAr,
+    name_en: nameEn,
+    role: "student",
+    active: input.active ?? true,
+    student_id: studentId,
+    duties: "",
+    created_at: now,
+    updated_at: now,
+  });
   return { user: safe, email: safe.email, password, created: true };
 }
 
@@ -578,6 +672,39 @@ export async function deleteUserServer(id: string, actor: SafeUser): Promise<Saf
   return safe;
 }
 
+/**
+ * Deactivates the bound portal login when a student record is removed, so a
+ * deleted student can no longer sign in. Idempotent — safe to re-call.
+ */
+export async function deactivateStudentUserServer(
+  studentId: string,
+  actor: SafeUser,
+): Promise<{ disabled: boolean }> {
+  const db = await getDb();
+  const found = await db.query(
+    `SELECT id, name_ar FROM users WHERE student_id = $1 AND role = 'student' LIMIT 1`,
+    [studentId],
+  );
+  if (found.rows.length === 0) {
+    return { disabled: false };
+  }
+  const row = found.rows[0] as { id: string; name_ar: string };
+  await db.query("UPDATE users SET active = false, updated_at = $1 WHERE id = $2", [
+    new Date().toISOString(),
+    row.id,
+  ]);
+  await deleteUserSessions(row.id);
+  await writeAudit({
+    action: "student.delete",
+    actorId: actor.id,
+    actorName: actor.nameAr,
+    targetId: row.id,
+    targetName: row.name_ar,
+    detail: "student removed from records — portal login deactivated",
+  });
+  return { disabled: true };
+}
+
 // ---------------------------------------------------------------------------
 // Audit log
 // ---------------------------------------------------------------------------
@@ -589,8 +716,26 @@ export type AuditAction =
   | "user.enable"
   | "user.reset_password"
   | "user.delete"
-  | "user.migrate";
+  | "user.migrate"
+  | "student.register"
+  | "student.update"
+  | "student.delete"
+  | "class.create"
+  | "class.update"
+  | "class.delete"
+  | "class.transfer"
+  | "subject.create"
+  | "subject.update"
+  | "subject.delete"
+  | "grade.entry"
+  | "payment.add"
+  | "warning.add"
+  | "attendance.mark"
+  | "expense.add"
+  | "document.generate"
+  | "bulletin.publish";
 
+/** Writes an audit entry. Actor info must always come from the session — never the client. */
 export async function writeAudit(entry: {
   action: AuditAction;
   actorId: string;

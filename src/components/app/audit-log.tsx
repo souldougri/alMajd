@@ -10,6 +10,23 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   "user.reset_password": "إعادة تعيين كلمة مرور",
   "user.delete": "حذف حساب",
   "user.migrate": "ترحيل حساب قديم",
+  "student.register": "تسجيل طالب جديد",
+  "student.update": "تحديث سجل طالب",
+  "student.delete": "حذف سجل طالب",
+  "class.create": "إنشاء فصل",
+  "class.update": "تعديل فصل",
+  "class.delete": "حذف فصل",
+  "class.transfer": "تحويل طالب بين الفصول",
+  "subject.create": "إنشاء مادة",
+  "subject.update": "تعديل مادة",
+  "subject.delete": "حذف مادة",
+  "grade.entry": "إدخال درجة",
+  "payment.add": "تسجيل دفعة",
+  "warning.add": "إصدار إنذار",
+  "attendance.mark": "تسجيل حضور",
+  "expense.add": "تسجيل إنفاق",
+  "document.generate": "إصدار وثيقة",
+  "bulletin.publish": "نشر النتائج",
 };
 
 function formatDate(iso: string) {
@@ -51,17 +68,18 @@ export function AuditLogView() {
         </div>
       ) : logs.length === 0 ? (
         <div className="rounded-2xl border border-navy/10 bg-white p-8 text-center text-sm text-navy/55 shadow-sm">
-          لا توجد أحداث مسجلة بعد. سيتم تسجيل إجراءات إدارة المستخدمين هنا.
+          لا توجد أحداث مسجلة بعد. سيتم تسجيل إجراءات إدارة المستخدمين والعمليات المدرسية هنا.
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-navy/10 bg-white shadow-sm">
-          <table className="w-full min-w-[560px] text-right text-sm">
+          <table className="w-full min-w-[620px] text-right text-sm">
             <thead>
               <tr className="border-b border-navy/10 bg-cream-subtle text-navy">
                 <th className="px-4 py-3 font-bold">التاريخ</th>
                 <th className="px-4 py-3 font-bold">الإجراء</th>
                 <th className="px-4 py-3 font-bold">بواسطة</th>
                 <th className="px-4 py-3 font-bold">المستهدف</th>
+                <th className="px-4 py-3 font-bold">التفاصيل</th>
               </tr>
             </thead>
             <tbody>
@@ -75,6 +93,7 @@ export function AuditLogView() {
                   </td>
                   <td className="px-4 py-3 font-medium text-navy">{log.actorName}</td>
                   <td className="px-4 py-3 text-navy/75">{log.targetName ?? "—"}</td>
+                  <td className="px-4 py-3 text-xs text-navy/60">{log.detail ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

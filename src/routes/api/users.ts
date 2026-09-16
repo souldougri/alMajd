@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createUserServer, listUsersSafe, requireAdminFromRequest, requireRegistrarOrAdminFromRequest, upsertStudentUserServer } from "@/server/auth";
+import { createUserServer, deactivateStudentUserServer, listUsersSafe, requireAdminFromRequest, requireRegistrarOrAdminFromRequest, upsertStudentUserServer } from "@/server/auth";
 import { ApiError, handle, jsonOk } from "@/server/http";
+import { composeNotification } from "@/server/notifications";
 import { type Role } from "@/lib/auth/types";
 
 type CreateUserBody = {
@@ -13,6 +14,7 @@ type CreateUserBody = {
   staffId?: unknown;
   studentId?: unknown;
   duties?: unknown;
+  disableLogin?: unknown;
 };
 
 export const Route = createFileRoute("/api/users")({
@@ -32,6 +34,14 @@ export const Route = createFileRoute("/api/users")({
           const body = (await request.json()) as CreateUserBody;
           const role = typeof body.role === "string" ? (body.role as Role) : "staff";
           const studentId = typeof body.studentId === "string" && body.studentId ? body.studentId : null;
+
+          // Bound student login deactivation when a student record is removed.
+          if (body.disableLogin === true) {
+            if (!studentId) {
+              throw new ApiError("حدد الطالب المراد تعطيل حسابه");
+            }
+            return jsonOk(await deactivateStudentUserServer(studentId, actor));
+          }
 
           // Staff accounts may never create user-management entries beyond a
           // bound student login for the registrar workspace.
@@ -57,6 +67,19 @@ export const Route = createFileRoute("/api/users")({
               { nameAr, nameEn, email, initialPassword, studentId, active },
               actor,
             );
+            if (result.created) {
+              // Automatic broadcast so the whole administration sees the new
+              // registration without any manual notification step.
+              await composeNotification(
+                {
+                  title: "تسجيل طالب جديد",
+                  body: `تم تسجيل الطالب ${result.user.nameAr} (${result.user.email}) — حُدِّثت الإحصائيات تلقائيًا.`,
+                  type: "general",
+                  target: "all_staff",
+                },
+                actor,
+              );
+            }
             return jsonOk({
               user: result.user,
               login: { email: result.email, password: result.password, created: result.created },

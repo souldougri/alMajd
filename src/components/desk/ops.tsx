@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { usePrintDocs } from "@/components/desk/print";
 import { SCHOOL, money, todayIso } from "@/lib/school";
 import { useSchool } from "@/lib/store";
+import { writeAuditEntry } from "@/lib/audit";
 import { getTeacherOptions, type TeacherOption } from "@/lib/teachers";
 import type { AttendanceStatus, CertKind, ClassSection, Subject, WarningKind } from "@/lib/types";
 
@@ -44,7 +45,15 @@ export function AttendanceView() {
                     <button
                       key={k}
                       type="button"
-                      onClick={() => mark(date, s.id, k)}
+                      onClick={() => {
+                        mark(date, s.id, k);
+                        void writeAuditEntry({
+                          action: "attendance.mark",
+                          targetId: s.id,
+                          targetName: s.nameAr,
+                          detail: `${statusLabel[k]} · ${date}`,
+                        });
+                      }}
                       className={
                         st === k
                           ? "h-10 rounded-md bg-primary px-3 text-xs text-primary-fg"
@@ -90,7 +99,14 @@ export function FeesView() {
         onSubmit={(e) => {
           e.preventDefault();
           if (!sid) return;
+          const st = students.find((s) => s.id === sid);
           addPayment(sid, Number(amount) || 0, note);
+          void writeAuditEntry({
+            action: "payment.add",
+            targetId: sid,
+            targetName: st?.nameAr,
+            detail: `${money(Number(amount) || 0)} — ${note.trim() || "قسط"}`,
+          });
           setAmount("50000");
           setNote("قسط");
           setFtId("");
@@ -388,7 +404,14 @@ export function WarningsView() {
         onSubmit={(e) => {
           e.preventDefault();
           if (!body.trim()) return;
+          const st = students.find((s) => s.id === sid);
           addWarning({ studentId: sid, kind, body: body.trim() });
+          void writeAuditEntry({
+            action: "warning.add",
+            targetId: sid,
+            targetName: st?.nameAr,
+            detail: `${warnLabel[kind]} — ${body.trim()}`,
+          });
           setBody("");
         }}
       >
@@ -471,8 +494,14 @@ export function ClassesView() {
 
   const confirmDelete = () => {
     if (deleteConfirmId) {
+      const target = classes.find((c) => c.id === deleteConfirmId);
       try {
         deleteClass(deleteConfirmId);
+        void writeAuditEntry({
+          action: "class.delete",
+          targetId: deleteConfirmId,
+          targetName: target?.nameAr,
+        });
         setDeleteConfirmId(null);
       } catch (err) {
         alert(err instanceof Error ? err.message : "فشل حذف الفصل");
@@ -497,7 +526,22 @@ export function ClassesView() {
       {open ? (
         <ClassForm
           onDone={() => { setOpen(false); setEditingId(null); }}
-          onSave={editingId ? (data) => editClass(editingId, data) : (data) => addClass(data as Omit<ClassSection, "id">)}
+          onSave={editingId
+            ? (data) => {
+                editClass(editingId, data);
+                void writeAuditEntry({
+                  action: "class.update",
+                  targetId: editingId,
+                  targetName: data.nameAr ?? editingClass?.nameAr,
+                });
+              }
+            : (data) => {
+                addClass(data as Omit<ClassSection, "id">);
+                void writeAuditEntry({
+                  action: "class.create",
+                  targetName: data.nameAr,
+                });
+              }}
           classData={editingClass ?? undefined}
         />
       ) : null}
@@ -708,7 +752,13 @@ export function SubjectsView() {
 
   const confirmDelete = () => {
     if (deleteConfirmId) {
+      const target = subjects.find((s) => s.id === deleteConfirmId);
       deleteSubject(deleteConfirmId);
+      void writeAuditEntry({
+        action: "subject.delete",
+        targetId: deleteConfirmId,
+        targetName: target?.nameAr,
+      });
       setDeleteConfirmId(null);
     }
   };
@@ -730,7 +780,22 @@ export function SubjectsView() {
       {open ? (
         <SubjectForm
           onDone={() => { setOpen(false); setEditingId(null); }}
-          onSave={editingId ? (data) => editSubject(editingId, data) : (data) => addSubject(data as Omit<Subject, "id">)}
+          onSave={editingId
+            ? (data) => {
+                editSubject(editingId, data);
+                void writeAuditEntry({
+                  action: "subject.update",
+                  targetId: editingId,
+                  targetName: data.nameAr ?? editingSubject?.nameAr,
+                });
+              }
+            : (data) => {
+                addSubject(data as Omit<Subject, "id">);
+                void writeAuditEntry({
+                  action: "subject.create",
+                  targetName: data.nameAr,
+                });
+              }}
           subjectData={editingSubject ?? undefined}
           classes={classes}
         />
@@ -1022,6 +1087,12 @@ export function GradesView() {
     if (isNaN(numValue) || value === "") {
       // Empty input - delete the grade
       deleteGrade(studentId, subjectId, selectedTermId);
+      void writeAuditEntry({
+        action: "grade.entry",
+        targetId: studentId,
+        targetName: classStudents.find((s) => s.id === studentId)?.nameAr,
+        detail: `${subject.nameAr} · cleared`,
+      });
       return;
     }
 
@@ -1038,6 +1109,12 @@ export function GradesView() {
       score: numValue,
       maxScore: subject.maxScore,
       date: new Date().toISOString().slice(0, 10),
+    });
+    void writeAuditEntry({
+      action: "grade.entry",
+      targetId: studentId,
+      targetName: classStudents.find((s) => s.id === studentId)?.nameAr,
+      detail: `${subject.nameAr} · ${numValue}/${subject.maxScore}`,
     });
   }
 
@@ -1123,7 +1200,16 @@ export function GradesView() {
           </select>
           <Button
             variant="outline"
-            onClick={() => setBulletinPublished(selectedClassId, selectedTermId, !isPublished)}
+            onClick={() => {
+              setBulletinPublished(selectedClassId, selectedTermId, !isPublished);
+              void writeAuditEntry({
+                action: "bulletin.publish",
+                targetName: activeClasses.find((c) => c.id === selectedClassId)?.nameAr,
+                detail: `${isPublished ? "unpublished" : "published"} — ${
+                  activeTerms.find((t) => t.id === selectedTermId)?.nameAr ?? ""
+                }`,
+              });
+            }}
           >
             {isPublished ? "سحب نشر النتائج" : "نشر النتائج للطلاب"}
           </Button>

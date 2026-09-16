@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WorkspaceFrame } from "@/components/workspaces/workspace-frame";
 import { money, todayIso } from "@/lib/school";
+import { writeAuditEntry } from "@/lib/audit";
 import { useSchool } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -248,6 +249,11 @@ function ExpensesPanel() {
       amount: amt,
       vendor: vendor.trim() || undefined,
       note: note.trim() || "—",
+    });
+    void writeAuditEntry({
+      action: "expense.add",
+      targetName: vendor.trim() || category,
+      detail: `${category} — ${money(amt)}`,
     });
     setAmount("");
     setVendor("");

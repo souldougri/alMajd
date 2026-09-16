@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { getAppreciation } from "@/lib/constants";
 import {
   WARNING_KIND_AR,
+  admissionNumber,
   classSubjects,
   formatPrintDate,
   formatScore,
@@ -29,7 +30,8 @@ export type PrintJob =
   | { kind: "receipt"; paymentId: string }
   | { kind: "bulletin"; studentId: string; termId: string }
   | { kind: "warning"; warningId: string }
-  | { kind: "summons"; studentId: string; warningId?: string };
+  | { kind: "summons"; studentId: string; warningId?: string }
+  | { kind: "admission"; studentId: string; email?: string; password?: string };
 
 type PrintContextValue = {
   job: PrintJob | null;
@@ -195,6 +197,8 @@ function OfficialSheet({
           appointmentTime={summons.appointmentTime}
         />
       );
+    case "admission":
+      return <AdmissionSheet studentId={job.studentId} email={job.email} password={job.password} />;
   }
 }
 
@@ -353,6 +357,105 @@ function ReceiptSheet({ paymentId }: { paymentId: string }) {
         </div>
       </dl>
       <SignatureBlock left="الختم والتوقيع" right="المحاسبة" />
+    </article>
+  );
+}
+
+function AdmissionSheet({
+  studentId,
+  email,
+  password,
+}: {
+  studentId: string;
+  email?: string;
+  password?: string;
+}) {
+  const students = useSchool((s) => s.students);
+  const student = students.find((s) => s.id === studentId);
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (!student) {
+    return (
+      <article className="print-sheet" dir="rtl">
+        <p>الطالب غير موجود.</p>
+      </article>
+    );
+  }
+
+  const no = admissionNumber(student, students);
+
+  return (
+    <article className="print-sheet" dir="rtl">
+      <PrintHeader
+        titleAr="وثيقة قبول الطالب"
+        titleFr="Certificat d'admission"
+      />
+      <p className="print-ref">
+        المرجع: <span className="ltr">{no}</span> · {SCHOOL.city} · {formatPrintDate(student.enrolled || today)}
+      </p>
+      <dl className="print-dl print-dl-id">
+        <div>
+          <dt>اسم التلميذ(ة)</dt>
+          <dd>{student.nameAr}</dd>
+        </div>
+        <div>
+          <dt>Nom</dt>
+          <dd>{student.nameFr || "—"}</dd>
+        </div>
+        <div>
+          <dt>الفصل</dt>
+          <dd>{student.klass || "—"}</dd>
+        </div>
+        <div>
+          <dt>تاريخ الميلاد</dt>
+          <dd>{student.dob || "—"}</dd>
+        </div>
+        <div>
+          <dt>ولي الأمر</dt>
+          <dd>{student.parentAr || "—"}</dd>
+        </div>
+        <div>
+          <dt>هاتف ولي الأمر</dt>
+          <dd>{student.phone || "—"}</dd>
+        </div>
+        <div>
+          <dt>تاريخ القيد</dt>
+          <dd>{student.enrolled ? formatPrintDate(student.enrolled) : "—"}</dd>
+        </div>
+        <div>
+          <dt>الرسوم السنوية</dt>
+          <dd>{money(student.annualFee)}</dd>
+        </div>
+      </dl>
+      <section className="print-body">
+        <h2>قرار القبول</h2>
+        <p>
+          تشرف إدارة {SCHOOL.nameAr} بقبول التلميذ(ة) <strong>{student.nameAr}</strong> بالتسجيل هذه السنة.
+          يرجى من ولي الأمر الإطلاع على نظام المدرسة والإلتزام بتسوية الرسوم في الآجال المحددة.
+        </p>
+      </section>
+      {email || password ? (
+        <section className="print-login">
+          <h2>بيانات تسجيل الدخول إلى الفضاء الرقمي</h2>
+          <dl className="print-dl print-dl-id">
+            <div>
+              <dt>اسم المستخدم</dt>
+              <dd dir="ltr">{email ?? "—"}</dd>
+            </div>
+            {password ? (
+              <div>
+                <dt>كلمة المرور الأولية</dt>
+                <dd className="ltr" dir="ltr">{password}</dd>
+              </div>
+            ) : null}
+          </dl>
+          <p className="print-letter">
+            يستعمل ولي الأمر أو التلميذ(ة) هذه البيانات للاطلاع على النتائج والاستدعاءات والإشعارات عبر
+            فضاء المدرسة. نرجو تغيير كلمة المرور بعد أول تسجيل دخول وعدم مشاركتها مع أي طرف آخر.
+          </p>
+        </section>
+      ) : null}
+      <SignatureBlock left="الختم وتوقيع الإدارة" right="الختم وتوقيع المدير" />
     </article>
   );
 }

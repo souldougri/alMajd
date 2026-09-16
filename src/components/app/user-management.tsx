@@ -306,12 +306,19 @@ export function UserManagement() {
               <div>
                 <label className={labelCls}>الدور</label>
                 <select className={inputCls} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
-                  {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_LABELS[r].ar}
-                    </option>
-                  ))}
+                  {(Object.keys(ROLE_LABELS) as Role[])
+                    .filter((r) => mode !== "create" || r !== "student")
+                    .map((r) => (
+                      <option key={r} value={r}>
+                        {ROLE_LABELS[r].ar}
+                      </option>
+                    ))}
                 </select>
+                {mode === "create" ? (
+                  <p className="mt-1 text-xs text-navy/55">
+                    يتم إنشاء حسابات الطلاب من وحدة التسجيل (أمين السجل) مع اسم مستخدم وكلمة مرور تلقائيين.
+                  </p>
+                ) : null}
               </div>
               {form.role === "staff" ? (
                 <div>

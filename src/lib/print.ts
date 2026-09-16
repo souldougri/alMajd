@@ -65,6 +65,17 @@ export function summonsNumber(
   return officialDocNo("SUM", isoDate, recordId, siblings);
 }
 
+/** Sequential admission document number for a student within their enrolment year. */
+export function admissionNumber(student: Student, students: Student[]): string {
+  const iso = student.enrolled || new Date().toISOString().slice(0, 10);
+  return officialDocNo(
+    "ADM",
+    iso,
+    student.id,
+    students.map((s) => ({ id: s.id, date: s.enrolled || iso })),
+  );
+}
+
 export function classSubjects(subjects: Subject[], classId: string | undefined): Subject[] {
   return subjects.filter((s) => s.active && (s.classId === classId || !s.classId));
 }

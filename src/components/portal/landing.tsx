@@ -26,10 +26,11 @@ export function PortalLanding() {
         <img
           src={SCHOOL.logo}
           alt={SCHOOL.nameAr}
-          className="seal size-28 rounded-full border-4 object-cover sm:size-32"
+          className="size-32 rounded-full border-4 bg-white object-contain p-2 sm:size-40"
           style={{
             borderColor: BRAND.gold,
             boxShadow: "0 12px 44px -18px rgba(216,154,62,0.6)",
+            objectPosition: "center",
           }}
         />
 
