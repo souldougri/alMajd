@@ -30,7 +30,7 @@ export function LoginForm({ initialRedirect }: { initialRedirect?: string }) {
         "/app/teacher",
         "/app/student",
       ],
-      staff: ["/app/staff", "/app/registrar", "/app/accountant", "/app/academic", "/app/supervisor"],
+      staff: ["/app/staff", "/app/branch", "/app/registrar", "/app/accountant", "/app/academic", "/app/supervisor"],
       teacher: ["/app/teacher"],
       student: ["/app/student"],
     };

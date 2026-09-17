@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, CalendarCheck2, ShieldAlert, Users, Wallet } from "lucide-react";
+import { BookOpen, Building2, CalendarCheck2, ShieldAlert, Users, Wallet } from "lucide-react";
 import { AppHeader } from "./app-header";
 import { useAuth } from "@/lib/auth/store";
 import { allowedWorkspaces, WORKSPACE_LABELS, type WorkspaceId } from "@/lib/workspaces";
+import { getHeadedBranches } from "@/lib/branches";
 
 const WS_ICONS: Record<WorkspaceId, typeof Users> = {
   registrar: Users,
@@ -14,6 +16,24 @@ const WS_ICONS: Record<WorkspaceId, typeof Users> = {
 export function StaffShell() {
   const user = useAuth((s) => s.currentUser);
   const ws = user ? allowedWorkspaces(user.role, user.duties) : [];
+  // Organizational role (not a duty): active Branch Head assignments unlock
+  // the "إدارة الفرع" workspace even with zero duties. Disappears when the
+  // assignment is removed.
+  const [headBranchCount, setHeadBranchCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    if (!user || user.role !== "staff") return;
+    getHeadedBranches(user.id)
+      .then((list) => {
+        if (!cancelled) setHeadBranchCount(list.length);
+      })
+      .catch(() => {
+        if (!cancelled) setHeadBranchCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   return (
     <div className="flex min-h-dvh flex-col bg-cream text-navy">
@@ -40,7 +60,24 @@ export function StaffShell() {
           </p>
         </div>
 
-        {ws.length === 0 ? (
+        {headBranchCount > 0 ? (
+          <Link
+            to="/app/branch"
+            className="mb-4 flex items-center gap-4 rounded-2xl border border-gold/40 bg-white p-6 shadow-sm transition-colors hover:border-gold"
+          >
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-navy text-gold">
+              <Building2 className="size-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-navy">إدارة الفرع</h2>
+              <p className="mt-1 text-sm text-navy/60">
+                أنت ناظر على {headBranchCount === 1 ? "فرع واحد" : `${headBranchCount} فروع`} — اعرض بيانات فرعك وفوّض
+                المسؤوليات التشغيلية.
+              </p>
+            </div>
+          </Link>
+        ) : null}
+        {ws.length === 0 && headBranchCount === 0 ? (
           <div className="rounded-2xl border border-gold/30 bg-white p-8 text-center shadow-sm">
             <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-gold/15">
               <ShieldAlert className="size-6 text-navy" />

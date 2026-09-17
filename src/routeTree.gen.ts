@@ -36,6 +36,7 @@ import { Route as ApiUsersRouteImport } from './routes/api/users'
 import { Route as AppAcademicRouteImport } from './routes/app/academic'
 import { Route as AppAccountantRouteImport } from './routes/app/accountant'
 import { Route as AppAdminRouteImport } from './routes/app/admin'
+import { Route as AppBranchRouteImport } from './routes/app/branch'
 import { Route as AppRegistrarRouteImport } from './routes/app/registrar'
 import { Route as AppStaffRouteImport } from './routes/app/staff'
 import { Route as AppStudentRouteImport } from './routes/app/student'
@@ -232,6 +233,11 @@ const AppAccountantRoute = AppAccountantRouteImport.update({
 const AppAdminRoute = AppAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBranchRoute = AppBranchRouteImport.update({
+  id: '/branch',
+  path: '/branch',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRegistrarRoute = AppRegistrarRouteImport.update({
@@ -589,6 +595,7 @@ export interface FileRoutesByFullPath {
   '/app/academic': typeof AppAcademicRoute
   '/app/accountant': typeof AppAccountantRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/branch': typeof AppBranchRoute
   '/app/registrar': typeof AppRegistrarRoute
   '/app/staff': typeof AppStaffRoute
   '/app/student': typeof AppStudentRoute
@@ -679,6 +686,7 @@ export interface FileRoutesByTo {
   '/app/academic': typeof AppAcademicRoute
   '/app/accountant': typeof AppAccountantRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/branch': typeof AppBranchRoute
   '/app/registrar': typeof AppRegistrarRoute
   '/app/staff': typeof AppStaffRoute
   '/app/student': typeof AppStudentRoute
@@ -772,6 +780,7 @@ export interface FileRoutesById {
   '/app/academic': typeof AppAcademicRoute
   '/app/accountant': typeof AppAccountantRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/branch': typeof AppBranchRoute
   '/app/registrar': typeof AppRegistrarRoute
   '/app/staff': typeof AppStaffRoute
   '/app/student': typeof AppStudentRoute
@@ -866,6 +875,7 @@ export interface FileRouteTypes {
     | '/app/academic'
     | '/app/accountant'
     | '/app/admin'
+    | '/app/branch'
     | '/app/registrar'
     | '/app/staff'
     | '/app/student'
@@ -956,6 +966,7 @@ export interface FileRouteTypes {
     | '/app/academic'
     | '/app/accountant'
     | '/app/admin'
+    | '/app/branch'
     | '/app/registrar'
     | '/app/staff'
     | '/app/student'
@@ -1048,6 +1059,7 @@ export interface FileRouteTypes {
     | '/app/academic'
     | '/app/accountant'
     | '/app/admin'
+    | '/app/branch'
     | '/app/registrar'
     | '/app/staff'
     | '/app/student'
@@ -1342,6 +1354,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/app/admin'
       preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/branch': {
+      id: '/app/branch'
+      path: '/branch'
+      fullPath: '/app/branch'
+      preLoaderRoute: typeof AppBranchRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/registrar': {
@@ -1814,6 +1833,7 @@ interface AppRouteChildren {
   AppAcademicRoute: typeof AppAcademicRoute
   AppAccountantRoute: typeof AppAccountantRoute
   AppAdminRoute: typeof AppAdminRoute
+  AppBranchRoute: typeof AppBranchRoute
   AppRegistrarRoute: typeof AppRegistrarRoute
   AppStaffRoute: typeof AppStaffRoute
   AppStudentRoute: typeof AppStudentRoute
@@ -1825,6 +1845,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAcademicRoute: AppAcademicRoute,
   AppAccountantRoute: AppAccountantRoute,
   AppAdminRoute: AppAdminRoute,
+  AppBranchRoute: AppBranchRoute,
   AppRegistrarRoute: AppRegistrarRoute,
   AppStaffRoute: AppStaffRoute,
   AppStudentRoute: AppStudentRoute,

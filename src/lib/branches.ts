@@ -39,6 +39,7 @@ export type BranchMember = {
   userId: string;
   branchId: string;
   assignedAt: string;
+  userNameAr?: string;
 };
 
 export type BranchTeacher = {
@@ -46,6 +47,7 @@ export type BranchTeacher = {
   teacherUserId: string;
   branchId: string;
   assignedAt: string;
+  userNameAr?: string;
 };
 
 export type BranchDuty = {
@@ -54,6 +56,27 @@ export type BranchDuty = {
   branchId: string;
   dutyCode: string;
   assignedAt: string;
+  userNameAr?: string;
+};
+
+export type BranchStudent = {
+  id: string;
+  nameAr: string;
+  klass: string;
+  classId?: string;
+};
+
+export type BranchClass = {
+  id: string;
+  nameAr: string;
+  headTeacherNameAr?: string;
+};
+
+export type AttendanceEntry = {
+  studentId: string;
+  studentNameAr: string;
+  status: string;
+  date: string;
 };
 
 function unwrap<T>(res: { ok: boolean; error?: string }, data: T | undefined, fallback: string): T {
@@ -65,6 +88,38 @@ function unwrap<T>(res: { ok: boolean; error?: string }, data: T | undefined, fa
 export async function getBranches(): Promise<Branch[]> {
   const res = await api.get<{ branches: Branch[] }>("/api/branches");
   return unwrap(res, res.data?.branches ?? [], "تعذر تحميل قائمة الفروع");
+}
+
+/**
+ * Branches where the given user is currently the active Branch Head.
+ * Composed from the scope-filtered branch list plus the per-branch head read
+ * (both server-authorized); the assignment disappearing removes the branch
+ * here automatically on the next load.
+ */
+export async function getHeadedBranches(userId: string): Promise<Branch[]> {
+  const branches = await getBranches();
+  const heads = await Promise.all(branches.map((b) => getBranchHead(b.id).catch(() => null)));
+  return branches.filter((b, i) => heads[i]?.userId === userId);
+}
+
+/** Students enrolled in a branch (branch scope enforced server-side). */
+export async function getBranchStudents(branchId: string): Promise<BranchStudent[]> {
+  const res = await api.get<{ items: BranchStudent[] }>(`/api/students?branchId=${encodeURIComponent(branchId)}`);
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل طلاب الفرع");
+}
+
+/** Classes of a branch (branch scope enforced server-side). */
+export async function getBranchClasses(branchId: string): Promise<BranchClass[]> {
+  const res = await api.get<{ items: BranchClass[] }>(`/api/academic/classes?branchId=${encodeURIComponent(branchId)}`);
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل فصول الفرع");
+}
+
+/** Attendance marks of one class on one date (branch scope enforced server-side). */
+export async function getClassAttendance(classId: string, date: string): Promise<AttendanceEntry[]> {
+  const res = await api.get<{ items: AttendanceEntry[] }>(
+    `/api/academic/attendance?classId=${encodeURIComponent(classId)}&date=${encodeURIComponent(date)}`,
+  );
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل الحضور");
 }
 
 export type BranchInput = {

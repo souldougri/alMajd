@@ -25,6 +25,8 @@ export type UserBranchRow = {
   userId: string;
   branchId: string;
   assignedAt: string;
+  // enriched (branch-scoped readers such as the Branch Head cannot list users)
+  userNameAr?: string;
 };
 
 export type BranchResponsibilityRow = {
@@ -33,6 +35,8 @@ export type BranchResponsibilityRow = {
   branchId: string;
   dutyCode: string;
   assignedAt: string;
+  // enriched (see UserBranchRow)
+  userNameAr?: string;
 };
 
 export type TeacherBranchRow = {
@@ -40,6 +44,8 @@ export type TeacherBranchRow = {
   teacherUserId: string;
   branchId: string;
   assignedAt: string;
+  // enriched (see UserBranchRow)
+  userNameAr?: string;
 };
 
 export type TeachingAssignmentRow = {
@@ -67,6 +73,7 @@ function toUserBranch(row: DbRow): UserBranchRow {
     userId: String(row.user_id),
     branchId: String(row.branch_id),
     assignedAt: String(row.assigned_at),
+    userNameAr: row.user_name_ar ? String(row.user_name_ar) : undefined,
   };
 }
 
@@ -77,6 +84,7 @@ function toBranchResponsibility(row: DbRow): BranchResponsibilityRow {
     branchId: String(row.branch_id),
     dutyCode: String(row.duty_code),
     assignedAt: String(row.assigned_at),
+    userNameAr: row.user_name_ar ? String(row.user_name_ar) : undefined,
   };
 }
 
@@ -86,6 +94,7 @@ function toTeacherBranch(row: DbRow): TeacherBranchRow {
     teacherUserId: String(row.teacher_user_id),
     branchId: String(row.branch_id),
     assignedAt: String(row.assigned_at),
+    userNameAr: row.user_name_ar ? String(row.user_name_ar) : undefined,
   };
 }
 
@@ -127,8 +136,10 @@ export async function listUserBranchAssignments(
   const result = await (
     await getDb()
   ).query(
-    `SELECT uba.id, uba.user_id, uba.branch_id, uba.assigned_at
+    `SELECT uba.id, uba.user_id, uba.branch_id, uba.assigned_at,
+            u.name_ar AS user_name_ar
      FROM user_branch_assignments uba
+     JOIN users u ON u.id = uba.user_id
      WHERE 1=1${where}
      ORDER BY uba.assigned_at DESC`,
     params,
@@ -209,8 +220,10 @@ export async function listBranchResponsibilities(
   const result = await (
     await getDb()
   ).query(
-    `SELECT br.id, br.user_id, br.branch_id, br.duty_code, br.assigned_at
+    `SELECT br.id, br.user_id, br.branch_id, br.duty_code, br.assigned_at,
+            u.name_ar AS user_name_ar
      FROM branch_responsibilities br
+     JOIN users u ON u.id = br.user_id
      WHERE 1=1${where}
      ORDER BY br.assigned_at DESC`,
     params,
@@ -290,8 +303,10 @@ export async function listTeacherBranchAssignments(
   const result = await (
     await getDb()
   ).query(
-    `SELECT tba.id, tba.teacher_user_id, tba.branch_id, tba.assigned_at
+    `SELECT tba.id, tba.teacher_user_id, tba.branch_id, tba.assigned_at,
+            u.name_ar AS user_name_ar
      FROM teacher_branch_assignments tba
+     JOIN users u ON u.id = tba.teacher_user_id
      WHERE 1=1${where}
      ORDER BY tba.assigned_at DESC`,
     params,
