@@ -36,7 +36,17 @@ let db: DbLike | null = null;
 let initPromise: Promise<void> | null = null;
 
 function makePg(): DbLike {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 5,
+    // Fail fast (instead of hanging to the serverless function timeout) when
+    // Neon is unreachable or a suspended compute never resumes.
+    connectionTimeoutMillis: 15_000,
+  });
+  // Idle-client errors must never surface as unhandled exceptions.
+  pool.on("error", (err) => {
+    console.error("[db] postgres pool error:", err instanceof Error ? err.message : err);
+  });
   return {
     query: (text, params) => pool.query(text, params) as unknown as Promise<DbResult>,
     exec: (sql) => pool.query(sql) as unknown as Promise<void>,
@@ -44,8 +54,18 @@ function makePg(): DbLike {
 }
 
 async function makePglite(): Promise<DbLike> {
-  if (!existsSync(DATA_DIR)) {
-    mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    if (!existsSync(DATA_DIR)) {
+      mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (err) {
+    // Serverless runtimes (Vercel) have a read-only filesystem outside /tmp,
+    // so the file-based PGLite fallback can never work there. Surface the real
+    // requirement instead of a cryptic EROFS 500 on every database route.
+    throw new Error(
+      `[db] local data directory is not writable (${err instanceof Error ? err.message : String(err)}). ` +
+        "Set DATABASE_URL to a reachable PostgreSQL (Neon) instance.",
+    );
   }
   const pglite = new PGlite(PGLITE_DIR);
   return {
@@ -167,6 +187,15 @@ async function init(): Promise<void> {
 }
 
 async function connect(): Promise<DbLike> {
+  if (!process.env.DATABASE_URL && process.env.VERCEL === "1") {
+    // Never silently fall back to file-based PGLite on Vercel: the filesystem
+    // is read-only and there is no database to talk to. Throw fast with an
+    // actionable server log (clients still receive the generic 500).
+    throw new Error(
+      "[db] DATABASE_URL is not set in the Vercel runtime environment. " +
+        "Link a Neon PostgreSQL database (DATABASE_URL) to this Vercel project.",
+    );
+  }
   db = process.env.DATABASE_URL ? makePg() : await makePglite();
   return db;
 }
