@@ -418,7 +418,8 @@ CREATE TABLE IF NOT EXISTS documents (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_documents_created ON documents(created_at);
-CREATE INDEX IF NOT EXISTS idx_documents_branch ON documents(branch_id);
+-- NOTE: idx_documents_branch lives in the bottom index block, AFTER the
+-- backward-compat ALTERs (legacy documents rows have no branch_id column).
 
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
@@ -458,7 +459,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
-CREATE INDEX IF NOT EXISTS idx_audit_branch ON audit_logs(branch_id);
+-- NOTE: idx_audit_branch lives in the bottom index block, AFTER the
+-- backward-compat ALTERs (legacy audit_logs rows have no branch_id column).
 
 -- Site modules (unchanged).
 CREATE TABLE IF NOT EXISTS contact_messages (
@@ -502,19 +504,28 @@ CREATE TABLE IF NOT EXISTS school_documents (
   updated_at TEXT NOT NULL
 );
 
--- Legacy session index (kept for freshly created databases).
-CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
-CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
-
--- Backward-compat columns that already exist in databases created before
--- these were introduced (idempotent).
+-- Backward-compat columns for databases created before these were
+-- introduced (idempotent). MUST run BEFORE the index block below: on a legacy
+-- database the tables already exist without these columns, and creating an
+-- index on a missing column aborts the whole schema batch (production login
+-- 500: column "branch_id" does not exist, from ComputeIndexAttrs).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS student_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS duties TEXT NOT NULL DEFAULT '';
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS branch_id TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS branch_id TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS entity_type TEXT NOT NULL DEFAULT '';
+
+-- Legacy session index (kept for freshly created databases).
+CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
+
+-- Branch indexes on legacy tables. These MUST stay after the ALTER block
+-- above: databases created before branch_id existed would otherwise abort the
+-- whole schema batch here (column "branch_id" does not exist).
+CREATE INDEX IF NOT EXISTS idx_documents_branch ON documents(branch_id);
+CREATE INDEX IF NOT EXISTS idx_audit_branch ON audit_logs(branch_id);
 `;
 
 /** Reference seed data for the lookup tables. */
