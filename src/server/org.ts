@@ -8,7 +8,7 @@
 import { getDb, type DbRow } from "./db";
 import { uid, writeAudit } from "./auth";
 import { ApiError } from "./http";
-import { getDefaultBranchId, listBranchesForUser, requireBranchId, toBranch, type BranchRow } from "./scope";
+import { getDefaultBranchId, listBranchesForUser, requireBranchAccess, requireBranchId, toBranch, type BranchRow } from "./scope";
 import type { SafeUser } from "@/lib/auth/types";
 
 export type CreateBranchInput = {
@@ -211,6 +211,33 @@ export async function assignBranchHead(branchId: string, userId: string, actor: 
   });
 }
 
+/**
+ * Returns the active Branch Head of a branch, or null when none is appointed.
+ * Branch-scoped read: the caller must have access to the branch, so a
+ * branch-scoped user can never see another branch's management data.
+ */
+export async function getBranchHead(branchId: string, user: SafeUser): Promise<(OrgAuthorityRow & { branchId: string }) | null> {
+  const bid = requireBranchId(branchId);
+  await requireBranchIdExists(bid);
+  await requireBranchAccess(user, bid);
+  const result = await (
+    await getDb()
+  ).query(
+    `SELECT bh.id, bh.branch_id, bh.user_id, u.name_ar AS user_name_ar, u.email AS user_email,
+            bh.active, bh.appointed_at, bu.name_ar AS appointed_by
+     FROM branch_heads bh
+     JOIN users u ON u.id = bh.user_id
+     LEFT JOIN users bu ON bu.id = bh.appointed_by_user_id
+     WHERE bh.branch_id = $1 AND bh.active = true
+     ORDER BY bh.appointed_at DESC
+     LIMIT 1`,
+    [bid],
+  );
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  return { ...toHeadRow(row), branchId: bid };
+}
+
 export async function removeBranchHead(branchId: string, actor: SafeUser): Promise<void> {
   if (actor.role !== "super_admin") {
     throw new ApiError("غير مصرح لك — إلغاء مدير الفرع يتطلب صلاحيات مدير النظام", 403);
@@ -301,6 +328,46 @@ export async function assignFinancialOfficer(branchId: string, userId: string, a
     targetName: String(user.rows[0].name_ar),
     detail: `assigned financial officer for branch ${bid}`,
   });
+}
+
+/**
+ * Returns the primary Financial Officer covering a branch, or null when none
+ * is assigned. Same branch-scoped read rule as the Branch Head.
+ */
+export async function getBranchFinancialOfficer(
+  branchId: string,
+  user: SafeUser,
+): Promise<(OrgAuthorityRow & { branchId: string; branchName?: string }) | null> {
+  const bid = requireBranchId(branchId);
+  await requireBranchIdExists(bid);
+  await requireBranchAccess(user, bid);
+  const result = await (
+    await getDb()
+  ).query(
+    `SELECT bfo.branch_id, bfo.financial_officer_user_id AS user_id, U.name_ar AS user_name_ar,
+            U.email AS user_email, bfo.status, bfo.assigned_at, bu.name_ar AS appointed_by,
+            b.name_ar AS branch_name
+     FROM branch_financial_officers bfo
+     JOIN users U ON U.id = bfo.financial_officer_user_id
+     JOIN branches b ON b.id = bfo.branch_id
+     LEFT JOIN users bu ON bu.id = bfo.assigned_by_user_id
+     WHERE bfo.branch_id = $1
+     LIMIT 1`,
+    [bid],
+  );
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  return {
+    id: String(row.branch_id),
+    branchId: String(row.branch_id),
+    branchName: String(row.branch_name ?? ""),
+    userId: String(row.user_id),
+    userNameAr: String(row.user_name_ar ?? ""),
+    userEmail: String(row.user_email ?? ""),
+    active: String(row.status) === "active",
+    assignedAt: String(row.assigned_at),
+    appointedBy: row.appointed_by ? String(row.appointed_by) : undefined,
+  };
 }
 
 /** Removes the FO for one branch (branch keeps no officer until reassigned). */

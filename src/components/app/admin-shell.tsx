@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bell, BookOpen, CalendarCheck2, FolderOpen, Globe, HardDriveDownload, LayoutDashboard, ShieldCheck, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookOpen, Building2, CalendarCheck2, FolderOpen, Globe, HardDriveDownload, LayoutDashboard, ShieldCheck, Users, Wallet, type LucideIcon } from "lucide-react";
 import { AppHeader } from "./app-header";
+import { BranchManagement } from "@/components/admin/branch-management";
 import { UserManagement } from "./user-management";
 import { AuditLogView } from "./audit-log";
 import { SiteManager } from "@/components/admin/site-manager";
@@ -14,10 +15,11 @@ import { useSchool } from "@/lib/store";
 import { WORKSPACE_LABELS, type WorkspaceId } from "@/lib/workspaces";
 import { cn } from "@/lib/utils";
 
-type Tab = "home" | "users" | "audit" | "expenses" | "site" | "notifications" | "documents" | "backup";
+type Tab = "home" | "branches" | "users" | "audit" | "expenses" | "site" | "notifications" | "documents" | "backup";
 
 const ADMIN_TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
   { id: "home", label: "الرئيسية", icon: LayoutDashboard },
+  { id: "branches", label: "الفروع", icon: Building2 },
   { id: "users", label: "المستخدمون", icon: Users },
   { id: "audit", label: "سجل التدقيق", icon: ShieldCheck },
   { id: "expenses", label: "سجل الإنفاق", icon: Wallet },
@@ -74,7 +76,9 @@ export function AdminShell() {
         </aside>
 
         <main className="min-w-0 flex-1 p-4 sm:p-6">
-          {tab === "users" ? (
+          {tab === "branches" ? (
+            <BranchManagement />
+          ) : tab === "users" ? (
             <UserManagement />
           ) : tab === "audit" ? (
             <AuditLogView />

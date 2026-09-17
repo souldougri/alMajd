@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/branches/$id/members")({
       DELETE: async ({ request, params }) => {
         try {
           const user = await requireUserFromRequest(request);
-          const body = (await request.json()).catch(() => ({})) as Body;
+          const body = (await request.json().catch(() => ({}))) as Body;
           const userId = typeof body.userId === "string" ? body.userId : "";
           await removeUserFromBranch(requireBranchId(params.id), requireBranchId(userId), user);
           return jsonOk({ removed: true });
