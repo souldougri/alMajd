@@ -33,7 +33,6 @@ export async function exportPrintSheetAsPdf(root: HTMLElement): Promise<Uint8Arr
   const full = await toCanvas(root, {
     pixelRatio: 1,
     backgroundColor: "#ffffff",
-    useCORS: true,
   });
   const width = full.width;
   const height = full.height;

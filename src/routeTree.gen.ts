@@ -20,6 +20,7 @@ import { Route as MarketingContactRouteImport } from './routes/_marketing/contac
 import { Route as MarketingNewsRouteImport } from './routes/_marketing/news'
 import { Route as MarketingProgramsRouteImport } from './routes/_marketing/programs'
 import { Route as ApiAuditRouteImport } from './routes/api/audit'
+import { Route as ApiBranchesRouteImport } from './routes/api/branches'
 import { Route as ApiContactRouteImport } from './routes/api/contact'
 import { Route as ApiDocumentsRouteImport } from './routes/api/documents'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
@@ -27,8 +28,10 @@ import { Route as ApiNotificationsRouteImport } from './routes/api/notifications
 import { Route as ApiSchoolRouteImport } from './routes/api/school'
 import { Route as ApiSiteSettingsRouteImport } from './routes/api/site-settings'
 import { Route as ApiStudentRouteImport } from './routes/api/student'
+import { Route as ApiStudentsRouteImport } from './routes/api/students'
 import { Route as ApiTeacherRouteImport } from './routes/api/teacher'
 import { Route as ApiTeachersRouteImport } from './routes/api/teachers'
+import { Route as ApiTeachingAssignmentsRouteImport } from './routes/api/teaching-assignments'
 import { Route as ApiUsersRouteImport } from './routes/api/users'
 import { Route as AppAcademicRouteImport } from './routes/app/academic'
 import { Route as AppAccountantRouteImport } from './routes/app/accountant'
@@ -39,19 +42,63 @@ import { Route as AppStudentRouteImport } from './routes/app/student'
 import { Route as AppSupervisorRouteImport } from './routes/app/supervisor'
 import { Route as AppTeacherRouteImport } from './routes/app/teacher'
 import { Route as MediaFileRouteImport } from './routes/media/$file'
+import { Route as ApiAcademicAssessmentTypesRouteImport } from './routes/api/academic/assessment-types'
+import { Route as ApiAcademicAssessmentsRouteImport } from './routes/api/academic/assessments'
+import { Route as ApiAcademicAttendanceRouteImport } from './routes/api/academic/attendance'
+import { Route as ApiAcademicClassesRouteImport } from './routes/api/academic/classes'
+import { Route as ApiAcademicExamSessionsRouteImport } from './routes/api/academic/exam-sessions'
+import { Route as ApiAcademicGradesRouteImport } from './routes/api/academic/grades'
+import { Route as ApiAcademicSubjectsRouteImport } from './routes/api/academic/subjects'
+import { Route as ApiAcademicTermsRouteImport } from './routes/api/academic/terms'
+import { Route as ApiAcademicWarningsRouteImport } from './routes/api/academic/warnings'
+import { Route as ApiAcademicYearsRouteImport } from './routes/api/academic/years'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthSessionRouteImport } from './routes/api/auth/session'
+import { Route as ApiBranchesIdRouteImport } from './routes/api/branches/$id'
+import { Route as ApiFinanceExpensesRouteImport } from './routes/api/finance/expenses'
+import { Route as ApiFinanceFeeTypesRouteImport } from './routes/api/finance/fee-types'
+import { Route as ApiFinancePaymentsRouteImport } from './routes/api/finance/payments'
 import { Route as ApiMediaCoverRouteImport } from './routes/api/media/cover'
 import { Route as ApiNewsIdRouteImport } from './routes/api/news/$id'
 import { Route as ApiNewsManageRouteImport } from './routes/api/news/manage'
 import { Route as ApiNotificationsReadRouteImport } from './routes/api/notifications/read'
 import { Route as ApiNotificationsSentRouteImport } from './routes/api/notifications/sent'
+import { Route as ApiStudentsIdRouteImport } from './routes/api/students/$id'
+import { Route as ApiStudentsMeRouteImport } from './routes/api/students/me'
+import { Route as ApiTeachersIdRouteImport } from './routes/api/teachers/$id'
+import { Route as ApiTeachingAssignmentsIdRouteImport } from './routes/api/teaching-assignments/$id'
 import { Route as ApiUsersIdRouteImport } from './routes/api/users/$id'
 import { Route as ApiUsersMigrateRouteImport } from './routes/api/users/migrate'
+import { Route as ApiAcademicAssessmentsIdRouteImport } from './routes/api/academic/assessments/$id'
+import { Route as ApiAcademicAttendanceIdRouteImport } from './routes/api/academic/attendance/$id'
+import { Route as ApiAcademicClassesIdRouteImport } from './routes/api/academic/classes/$id'
+import { Route as ApiAcademicExamSessionsIdRouteImport } from './routes/api/academic/exam-sessions/$id'
+import { Route as ApiAcademicGradesIdRouteImport } from './routes/api/academic/grades/$id'
+import { Route as ApiAcademicSubjectsIdRouteImport } from './routes/api/academic/subjects/$id'
+import { Route as ApiAcademicTermsIdRouteImport } from './routes/api/academic/terms/$id'
+import { Route as ApiAcademicWarningsIdRouteImport } from './routes/api/academic/warnings/$id'
+import { Route as ApiAcademicYearsIdRouteImport } from './routes/api/academic/years/$id'
+import { Route as ApiBranchesIdBranchHeadRouteImport } from './routes/api/branches/$id/branch-head'
+import { Route as ApiBranchesIdDutiesRouteImport } from './routes/api/branches/$id/duties'
+import { Route as ApiBranchesIdFinancialOfficerRouteImport } from './routes/api/branches/$id/financial-officer'
+import { Route as ApiBranchesIdMembersRouteImport } from './routes/api/branches/$id/members'
+import { Route as ApiBranchesIdTeachersRouteImport } from './routes/api/branches/$id/teachers'
 import { Route as ApiDocumentsIdArchiveRouteImport } from './routes/api/documents/$id/archive'
 import { Route as ApiDocumentsIdDownloadRouteImport } from './routes/api/documents/$id/download'
+import { Route as ApiFinanceExpensesIdRouteImport } from './routes/api/finance/expenses/$id'
+import { Route as ApiFinanceFeeTypesIdRouteImport } from './routes/api/finance/fee-types/$id'
+import { Route as ApiFinancePaymentsIdRouteImport } from './routes/api/finance/payments/$id'
+import { Route as ApiStudentsIdPromoteRouteImport } from './routes/api/students/$id/promote'
+import { Route as ApiStudentsIdTransferRouteImport } from './routes/api/students/$id/transfer'
 import { Route as ApiUsersIdResetPasswordRouteImport } from './routes/api/users/$id/reset-password'
+import { Route as ApiAcademicClassesIdClassSubjectsRouteImport } from './routes/api/academic/classes/$id/class-subjects'
+import { Route as ApiAcademicClassesIdResultsRouteImport } from './routes/api/academic/classes/$id/results'
+import { Route as ApiAcademicClassesIdTimetableRouteImport } from './routes/api/academic/classes/$id/timetable'
+import { Route as ApiAcademicClassesIdTransferRouteImport } from './routes/api/academic/classes/$id/transfer'
+import { Route as ApiBranchesIdDutiesResponsibilityIdRouteImport } from './routes/api/branches/$id/duties/$responsibilityId'
+import { Route as ApiAcademicClassesIdClassSubjectsSubjectIdRouteImport } from './routes/api/academic/classes/$id/class-subjects/$subjectId'
+import { Route as ApiAcademicClassesIdTimetableEntryIdRouteImport } from './routes/api/academic/classes/$id/timetable/$entryId'
 
 const MarketingRoute = MarketingRouteImport.update({
   id: '/_marketing',
@@ -107,6 +154,11 @@ const ApiAuditRoute = ApiAuditRouteImport.update({
   path: '/api/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBranchesRoute = ApiBranchesRouteImport.update({
+  id: '/api/branches',
+  path: '/api/branches',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiContactRoute = ApiContactRouteImport.update({
   id: '/api/contact',
   path: '/api/contact',
@@ -142,6 +194,11 @@ const ApiStudentRoute = ApiStudentRouteImport.update({
   path: '/api/student',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStudentsRoute = ApiStudentsRouteImport.update({
+  id: '/api/students',
+  path: '/api/students',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTeacherRoute = ApiTeacherRouteImport.update({
   id: '/api/teacher',
   path: '/api/teacher',
@@ -150,6 +207,11 @@ const ApiTeacherRoute = ApiTeacherRouteImport.update({
 const ApiTeachersRoute = ApiTeachersRouteImport.update({
   id: '/api/teachers',
   path: '/api/teachers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTeachingAssignmentsRoute = ApiTeachingAssignmentsRouteImport.update({
+  id: '/api/teaching-assignments',
+  path: '/api/teaching-assignments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiUsersRoute = ApiUsersRouteImport.update({
@@ -202,6 +264,57 @@ const MediaFileRoute = MediaFileRouteImport.update({
   path: '/media/$file',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAcademicAssessmentTypesRoute =
+  ApiAcademicAssessmentTypesRouteImport.update({
+    id: '/api/academic/assessment-types',
+    path: '/api/academic/assessment-types',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAcademicAssessmentsRoute = ApiAcademicAssessmentsRouteImport.update({
+  id: '/api/academic/assessments',
+  path: '/api/academic/assessments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAcademicAttendanceRoute = ApiAcademicAttendanceRouteImport.update({
+  id: '/api/academic/attendance',
+  path: '/api/academic/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAcademicClassesRoute = ApiAcademicClassesRouteImport.update({
+  id: '/api/academic/classes',
+  path: '/api/academic/classes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAcademicExamSessionsRoute = ApiAcademicExamSessionsRouteImport.update({
+  id: '/api/academic/exam-sessions',
+  path: '/api/academic/exam-sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAcademicGradesRoute = ApiAcademicGradesRouteImport.update({
+  id: '/api/academic/grades',
+  path: '/api/academic/grades',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAcademicSubjectsRoute = ApiAcademicSubjectsRouteImport.update({
+  id: '/api/academic/subjects',
+  path: '/api/academic/subjects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAcademicTermsRoute = ApiAcademicTermsRouteImport.update({
+  id: '/api/academic/terms',
+  path: '/api/academic/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAcademicWarningsRoute = ApiAcademicWarningsRouteImport.update({
+  id: '/api/academic/warnings',
+  path: '/api/academic/warnings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAcademicYearsRoute = ApiAcademicYearsRouteImport.update({
+  id: '/api/academic/years',
+  path: '/api/academic/years',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
   id: '/api/auth/login',
   path: '/api/auth/login',
@@ -215,6 +328,26 @@ const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
 const ApiAuthSessionRoute = ApiAuthSessionRouteImport.update({
   id: '/api/auth/session',
   path: '/api/auth/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBranchesIdRoute = ApiBranchesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiBranchesRoute,
+} as any)
+const ApiFinanceExpensesRoute = ApiFinanceExpensesRouteImport.update({
+  id: '/api/finance/expenses',
+  path: '/api/finance/expenses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFinanceFeeTypesRoute = ApiFinanceFeeTypesRouteImport.update({
+  id: '/api/finance/fee-types',
+  path: '/api/finance/fee-types',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFinancePaymentsRoute = ApiFinancePaymentsRouteImport.update({
+  id: '/api/finance/payments',
+  path: '/api/finance/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMediaCoverRoute = ApiMediaCoverRouteImport.update({
@@ -242,6 +375,27 @@ const ApiNotificationsSentRoute = ApiNotificationsSentRouteImport.update({
   path: '/sent',
   getParentRoute: () => ApiNotificationsRoute,
 } as any)
+const ApiStudentsIdRoute = ApiStudentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiStudentsRoute,
+} as any)
+const ApiStudentsMeRoute = ApiStudentsMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => ApiStudentsRoute,
+} as any)
+const ApiTeachersIdRoute = ApiTeachersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiTeachersRoute,
+} as any)
+const ApiTeachingAssignmentsIdRoute =
+  ApiTeachingAssignmentsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiTeachingAssignmentsRoute,
+  } as any)
 const ApiUsersIdRoute = ApiUsersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -251,6 +405,79 @@ const ApiUsersMigrateRoute = ApiUsersMigrateRouteImport.update({
   id: '/migrate',
   path: '/migrate',
   getParentRoute: () => ApiUsersRoute,
+} as any)
+const ApiAcademicAssessmentsIdRoute =
+  ApiAcademicAssessmentsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAcademicAssessmentsRoute,
+  } as any)
+const ApiAcademicAttendanceIdRoute = ApiAcademicAttendanceIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAcademicAttendanceRoute,
+} as any)
+const ApiAcademicClassesIdRoute = ApiAcademicClassesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAcademicClassesRoute,
+} as any)
+const ApiAcademicExamSessionsIdRoute =
+  ApiAcademicExamSessionsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAcademicExamSessionsRoute,
+  } as any)
+const ApiAcademicGradesIdRoute = ApiAcademicGradesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAcademicGradesRoute,
+} as any)
+const ApiAcademicSubjectsIdRoute = ApiAcademicSubjectsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAcademicSubjectsRoute,
+} as any)
+const ApiAcademicTermsIdRoute = ApiAcademicTermsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAcademicTermsRoute,
+} as any)
+const ApiAcademicWarningsIdRoute = ApiAcademicWarningsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAcademicWarningsRoute,
+} as any)
+const ApiAcademicYearsIdRoute = ApiAcademicYearsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAcademicYearsRoute,
+} as any)
+const ApiBranchesIdBranchHeadRoute = ApiBranchesIdBranchHeadRouteImport.update({
+  id: '/branch-head',
+  path: '/branch-head',
+  getParentRoute: () => ApiBranchesIdRoute,
+} as any)
+const ApiBranchesIdDutiesRoute = ApiBranchesIdDutiesRouteImport.update({
+  id: '/duties',
+  path: '/duties',
+  getParentRoute: () => ApiBranchesIdRoute,
+} as any)
+const ApiBranchesIdFinancialOfficerRoute =
+  ApiBranchesIdFinancialOfficerRouteImport.update({
+    id: '/financial-officer',
+    path: '/financial-officer',
+    getParentRoute: () => ApiBranchesIdRoute,
+  } as any)
+const ApiBranchesIdMembersRoute = ApiBranchesIdMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => ApiBranchesIdRoute,
+} as any)
+const ApiBranchesIdTeachersRoute = ApiBranchesIdTeachersRouteImport.update({
+  id: '/teachers',
+  path: '/teachers',
+  getParentRoute: () => ApiBranchesIdRoute,
 } as any)
 const ApiDocumentsIdArchiveRoute = ApiDocumentsIdArchiveRouteImport.update({
   id: '/$id/archive',
@@ -262,11 +489,78 @@ const ApiDocumentsIdDownloadRoute = ApiDocumentsIdDownloadRouteImport.update({
   path: '/$id/download',
   getParentRoute: () => ApiDocumentsRoute,
 } as any)
+const ApiFinanceExpensesIdRoute = ApiFinanceExpensesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiFinanceExpensesRoute,
+} as any)
+const ApiFinanceFeeTypesIdRoute = ApiFinanceFeeTypesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiFinanceFeeTypesRoute,
+} as any)
+const ApiFinancePaymentsIdRoute = ApiFinancePaymentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiFinancePaymentsRoute,
+} as any)
+const ApiStudentsIdPromoteRoute = ApiStudentsIdPromoteRouteImport.update({
+  id: '/promote',
+  path: '/promote',
+  getParentRoute: () => ApiStudentsIdRoute,
+} as any)
+const ApiStudentsIdTransferRoute = ApiStudentsIdTransferRouteImport.update({
+  id: '/transfer',
+  path: '/transfer',
+  getParentRoute: () => ApiStudentsIdRoute,
+} as any)
 const ApiUsersIdResetPasswordRoute = ApiUsersIdResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => ApiUsersIdRoute,
 } as any)
+const ApiAcademicClassesIdClassSubjectsRoute =
+  ApiAcademicClassesIdClassSubjectsRouteImport.update({
+    id: '/class-subjects',
+    path: '/class-subjects',
+    getParentRoute: () => ApiAcademicClassesIdRoute,
+  } as any)
+const ApiAcademicClassesIdResultsRoute =
+  ApiAcademicClassesIdResultsRouteImport.update({
+    id: '/results',
+    path: '/results',
+    getParentRoute: () => ApiAcademicClassesIdRoute,
+  } as any)
+const ApiAcademicClassesIdTimetableRoute =
+  ApiAcademicClassesIdTimetableRouteImport.update({
+    id: '/timetable',
+    path: '/timetable',
+    getParentRoute: () => ApiAcademicClassesIdRoute,
+  } as any)
+const ApiAcademicClassesIdTransferRoute =
+  ApiAcademicClassesIdTransferRouteImport.update({
+    id: '/transfer',
+    path: '/transfer',
+    getParentRoute: () => ApiAcademicClassesIdRoute,
+  } as any)
+const ApiBranchesIdDutiesResponsibilityIdRoute =
+  ApiBranchesIdDutiesResponsibilityIdRouteImport.update({
+    id: '/$responsibilityId',
+    path: '/$responsibilityId',
+    getParentRoute: () => ApiBranchesIdDutiesRoute,
+  } as any)
+const ApiAcademicClassesIdClassSubjectsSubjectIdRoute =
+  ApiAcademicClassesIdClassSubjectsSubjectIdRouteImport.update({
+    id: '/$subjectId',
+    path: '/$subjectId',
+    getParentRoute: () => ApiAcademicClassesIdClassSubjectsRoute,
+  } as any)
+const ApiAcademicClassesIdTimetableEntryIdRoute =
+  ApiAcademicClassesIdTimetableEntryIdRouteImport.update({
+    id: '/$entryId',
+    path: '/$entryId',
+    getParentRoute: () => ApiAcademicClassesIdTimetableRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MarketingIndexRoute
@@ -279,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof MarketingNewsRoute
   '/programs': typeof MarketingProgramsRoute
   '/api/audit': typeof ApiAuditRoute
+  '/api/branches': typeof ApiBranchesRouteWithChildren
   '/api/contact': typeof ApiContactRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/news': typeof ApiNewsRouteWithChildren
@@ -286,8 +581,10 @@ export interface FileRoutesByFullPath {
   '/api/school': typeof ApiSchoolRoute
   '/api/site-settings': typeof ApiSiteSettingsRoute
   '/api/student': typeof ApiStudentRoute
+  '/api/students': typeof ApiStudentsRouteWithChildren
   '/api/teacher': typeof ApiTeacherRoute
-  '/api/teachers': typeof ApiTeachersRoute
+  '/api/teachers': typeof ApiTeachersRouteWithChildren
+  '/api/teaching-assignments': typeof ApiTeachingAssignmentsRouteWithChildren
   '/api/users': typeof ApiUsersRouteWithChildren
   '/app/academic': typeof AppAcademicRoute
   '/app/accountant': typeof AppAccountantRoute
@@ -298,19 +595,63 @@ export interface FileRoutesByFullPath {
   '/app/supervisor': typeof AppSupervisorRoute
   '/app/teacher': typeof AppTeacherRoute
   '/media/$file': typeof MediaFileRoute
+  '/api/academic/assessment-types': typeof ApiAcademicAssessmentTypesRoute
+  '/api/academic/assessments': typeof ApiAcademicAssessmentsRouteWithChildren
+  '/api/academic/attendance': typeof ApiAcademicAttendanceRouteWithChildren
+  '/api/academic/classes': typeof ApiAcademicClassesRouteWithChildren
+  '/api/academic/exam-sessions': typeof ApiAcademicExamSessionsRouteWithChildren
+  '/api/academic/grades': typeof ApiAcademicGradesRouteWithChildren
+  '/api/academic/subjects': typeof ApiAcademicSubjectsRouteWithChildren
+  '/api/academic/terms': typeof ApiAcademicTermsRouteWithChildren
+  '/api/academic/warnings': typeof ApiAcademicWarningsRouteWithChildren
+  '/api/academic/years': typeof ApiAcademicYearsRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/branches/$id': typeof ApiBranchesIdRouteWithChildren
+  '/api/finance/expenses': typeof ApiFinanceExpensesRouteWithChildren
+  '/api/finance/fee-types': typeof ApiFinanceFeeTypesRouteWithChildren
+  '/api/finance/payments': typeof ApiFinancePaymentsRouteWithChildren
   '/api/media/cover': typeof ApiMediaCoverRoute
   '/api/news/$id': typeof ApiNewsIdRoute
   '/api/news/manage': typeof ApiNewsManageRoute
   '/api/notifications/read': typeof ApiNotificationsReadRoute
   '/api/notifications/sent': typeof ApiNotificationsSentRoute
+  '/api/students/$id': typeof ApiStudentsIdRouteWithChildren
+  '/api/students/me': typeof ApiStudentsMeRoute
+  '/api/teachers/$id': typeof ApiTeachersIdRoute
+  '/api/teaching-assignments/$id': typeof ApiTeachingAssignmentsIdRoute
   '/api/users/$id': typeof ApiUsersIdRouteWithChildren
   '/api/users/migrate': typeof ApiUsersMigrateRoute
+  '/api/academic/assessments/$id': typeof ApiAcademicAssessmentsIdRoute
+  '/api/academic/attendance/$id': typeof ApiAcademicAttendanceIdRoute
+  '/api/academic/classes/$id': typeof ApiAcademicClassesIdRouteWithChildren
+  '/api/academic/exam-sessions/$id': typeof ApiAcademicExamSessionsIdRoute
+  '/api/academic/grades/$id': typeof ApiAcademicGradesIdRoute
+  '/api/academic/subjects/$id': typeof ApiAcademicSubjectsIdRoute
+  '/api/academic/terms/$id': typeof ApiAcademicTermsIdRoute
+  '/api/academic/warnings/$id': typeof ApiAcademicWarningsIdRoute
+  '/api/academic/years/$id': typeof ApiAcademicYearsIdRoute
+  '/api/branches/$id/branch-head': typeof ApiBranchesIdBranchHeadRoute
+  '/api/branches/$id/duties': typeof ApiBranchesIdDutiesRouteWithChildren
+  '/api/branches/$id/financial-officer': typeof ApiBranchesIdFinancialOfficerRoute
+  '/api/branches/$id/members': typeof ApiBranchesIdMembersRoute
+  '/api/branches/$id/teachers': typeof ApiBranchesIdTeachersRoute
   '/api/documents/$id/archive': typeof ApiDocumentsIdArchiveRoute
   '/api/documents/$id/download': typeof ApiDocumentsIdDownloadRoute
+  '/api/finance/expenses/$id': typeof ApiFinanceExpensesIdRoute
+  '/api/finance/fee-types/$id': typeof ApiFinanceFeeTypesIdRoute
+  '/api/finance/payments/$id': typeof ApiFinancePaymentsIdRoute
+  '/api/students/$id/promote': typeof ApiStudentsIdPromoteRoute
+  '/api/students/$id/transfer': typeof ApiStudentsIdTransferRoute
   '/api/users/$id/reset-password': typeof ApiUsersIdResetPasswordRoute
+  '/api/academic/classes/$id/class-subjects': typeof ApiAcademicClassesIdClassSubjectsRouteWithChildren
+  '/api/academic/classes/$id/results': typeof ApiAcademicClassesIdResultsRoute
+  '/api/academic/classes/$id/timetable': typeof ApiAcademicClassesIdTimetableRouteWithChildren
+  '/api/academic/classes/$id/transfer': typeof ApiAcademicClassesIdTransferRoute
+  '/api/branches/$id/duties/$responsibilityId': typeof ApiBranchesIdDutiesResponsibilityIdRoute
+  '/api/academic/classes/$id/class-subjects/$subjectId': typeof ApiAcademicClassesIdClassSubjectsSubjectIdRoute
+  '/api/academic/classes/$id/timetable/$entryId': typeof ApiAcademicClassesIdTimetableEntryIdRoute
 }
 export interface FileRoutesByTo {
   '/app': typeof AppRouteWithChildren
@@ -322,6 +663,7 @@ export interface FileRoutesByTo {
   '/news': typeof MarketingNewsRoute
   '/programs': typeof MarketingProgramsRoute
   '/api/audit': typeof ApiAuditRoute
+  '/api/branches': typeof ApiBranchesRouteWithChildren
   '/api/contact': typeof ApiContactRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/news': typeof ApiNewsRouteWithChildren
@@ -329,8 +671,10 @@ export interface FileRoutesByTo {
   '/api/school': typeof ApiSchoolRoute
   '/api/site-settings': typeof ApiSiteSettingsRoute
   '/api/student': typeof ApiStudentRoute
+  '/api/students': typeof ApiStudentsRouteWithChildren
   '/api/teacher': typeof ApiTeacherRoute
-  '/api/teachers': typeof ApiTeachersRoute
+  '/api/teachers': typeof ApiTeachersRouteWithChildren
+  '/api/teaching-assignments': typeof ApiTeachingAssignmentsRouteWithChildren
   '/api/users': typeof ApiUsersRouteWithChildren
   '/app/academic': typeof AppAcademicRoute
   '/app/accountant': typeof AppAccountantRoute
@@ -342,19 +686,63 @@ export interface FileRoutesByTo {
   '/app/teacher': typeof AppTeacherRoute
   '/media/$file': typeof MediaFileRoute
   '/': typeof MarketingIndexRoute
+  '/api/academic/assessment-types': typeof ApiAcademicAssessmentTypesRoute
+  '/api/academic/assessments': typeof ApiAcademicAssessmentsRouteWithChildren
+  '/api/academic/attendance': typeof ApiAcademicAttendanceRouteWithChildren
+  '/api/academic/classes': typeof ApiAcademicClassesRouteWithChildren
+  '/api/academic/exam-sessions': typeof ApiAcademicExamSessionsRouteWithChildren
+  '/api/academic/grades': typeof ApiAcademicGradesRouteWithChildren
+  '/api/academic/subjects': typeof ApiAcademicSubjectsRouteWithChildren
+  '/api/academic/terms': typeof ApiAcademicTermsRouteWithChildren
+  '/api/academic/warnings': typeof ApiAcademicWarningsRouteWithChildren
+  '/api/academic/years': typeof ApiAcademicYearsRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/branches/$id': typeof ApiBranchesIdRouteWithChildren
+  '/api/finance/expenses': typeof ApiFinanceExpensesRouteWithChildren
+  '/api/finance/fee-types': typeof ApiFinanceFeeTypesRouteWithChildren
+  '/api/finance/payments': typeof ApiFinancePaymentsRouteWithChildren
   '/api/media/cover': typeof ApiMediaCoverRoute
   '/api/news/$id': typeof ApiNewsIdRoute
   '/api/news/manage': typeof ApiNewsManageRoute
   '/api/notifications/read': typeof ApiNotificationsReadRoute
   '/api/notifications/sent': typeof ApiNotificationsSentRoute
+  '/api/students/$id': typeof ApiStudentsIdRouteWithChildren
+  '/api/students/me': typeof ApiStudentsMeRoute
+  '/api/teachers/$id': typeof ApiTeachersIdRoute
+  '/api/teaching-assignments/$id': typeof ApiTeachingAssignmentsIdRoute
   '/api/users/$id': typeof ApiUsersIdRouteWithChildren
   '/api/users/migrate': typeof ApiUsersMigrateRoute
+  '/api/academic/assessments/$id': typeof ApiAcademicAssessmentsIdRoute
+  '/api/academic/attendance/$id': typeof ApiAcademicAttendanceIdRoute
+  '/api/academic/classes/$id': typeof ApiAcademicClassesIdRouteWithChildren
+  '/api/academic/exam-sessions/$id': typeof ApiAcademicExamSessionsIdRoute
+  '/api/academic/grades/$id': typeof ApiAcademicGradesIdRoute
+  '/api/academic/subjects/$id': typeof ApiAcademicSubjectsIdRoute
+  '/api/academic/terms/$id': typeof ApiAcademicTermsIdRoute
+  '/api/academic/warnings/$id': typeof ApiAcademicWarningsIdRoute
+  '/api/academic/years/$id': typeof ApiAcademicYearsIdRoute
+  '/api/branches/$id/branch-head': typeof ApiBranchesIdBranchHeadRoute
+  '/api/branches/$id/duties': typeof ApiBranchesIdDutiesRouteWithChildren
+  '/api/branches/$id/financial-officer': typeof ApiBranchesIdFinancialOfficerRoute
+  '/api/branches/$id/members': typeof ApiBranchesIdMembersRoute
+  '/api/branches/$id/teachers': typeof ApiBranchesIdTeachersRoute
   '/api/documents/$id/archive': typeof ApiDocumentsIdArchiveRoute
   '/api/documents/$id/download': typeof ApiDocumentsIdDownloadRoute
+  '/api/finance/expenses/$id': typeof ApiFinanceExpensesIdRoute
+  '/api/finance/fee-types/$id': typeof ApiFinanceFeeTypesIdRoute
+  '/api/finance/payments/$id': typeof ApiFinancePaymentsIdRoute
+  '/api/students/$id/promote': typeof ApiStudentsIdPromoteRoute
+  '/api/students/$id/transfer': typeof ApiStudentsIdTransferRoute
   '/api/users/$id/reset-password': typeof ApiUsersIdResetPasswordRoute
+  '/api/academic/classes/$id/class-subjects': typeof ApiAcademicClassesIdClassSubjectsRouteWithChildren
+  '/api/academic/classes/$id/results': typeof ApiAcademicClassesIdResultsRoute
+  '/api/academic/classes/$id/timetable': typeof ApiAcademicClassesIdTimetableRouteWithChildren
+  '/api/academic/classes/$id/transfer': typeof ApiAcademicClassesIdTransferRoute
+  '/api/branches/$id/duties/$responsibilityId': typeof ApiBranchesIdDutiesResponsibilityIdRoute
+  '/api/academic/classes/$id/class-subjects/$subjectId': typeof ApiAcademicClassesIdClassSubjectsSubjectIdRoute
+  '/api/academic/classes/$id/timetable/$entryId': typeof ApiAcademicClassesIdTimetableEntryIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -368,6 +756,7 @@ export interface FileRoutesById {
   '/_marketing/news': typeof MarketingNewsRoute
   '/_marketing/programs': typeof MarketingProgramsRoute
   '/api/audit': typeof ApiAuditRoute
+  '/api/branches': typeof ApiBranchesRouteWithChildren
   '/api/contact': typeof ApiContactRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/news': typeof ApiNewsRouteWithChildren
@@ -375,8 +764,10 @@ export interface FileRoutesById {
   '/api/school': typeof ApiSchoolRoute
   '/api/site-settings': typeof ApiSiteSettingsRoute
   '/api/student': typeof ApiStudentRoute
+  '/api/students': typeof ApiStudentsRouteWithChildren
   '/api/teacher': typeof ApiTeacherRoute
-  '/api/teachers': typeof ApiTeachersRoute
+  '/api/teachers': typeof ApiTeachersRouteWithChildren
+  '/api/teaching-assignments': typeof ApiTeachingAssignmentsRouteWithChildren
   '/api/users': typeof ApiUsersRouteWithChildren
   '/app/academic': typeof AppAcademicRoute
   '/app/accountant': typeof AppAccountantRoute
@@ -388,19 +779,63 @@ export interface FileRoutesById {
   '/app/teacher': typeof AppTeacherRoute
   '/media/$file': typeof MediaFileRoute
   '/_marketing/': typeof MarketingIndexRoute
+  '/api/academic/assessment-types': typeof ApiAcademicAssessmentTypesRoute
+  '/api/academic/assessments': typeof ApiAcademicAssessmentsRouteWithChildren
+  '/api/academic/attendance': typeof ApiAcademicAttendanceRouteWithChildren
+  '/api/academic/classes': typeof ApiAcademicClassesRouteWithChildren
+  '/api/academic/exam-sessions': typeof ApiAcademicExamSessionsRouteWithChildren
+  '/api/academic/grades': typeof ApiAcademicGradesRouteWithChildren
+  '/api/academic/subjects': typeof ApiAcademicSubjectsRouteWithChildren
+  '/api/academic/terms': typeof ApiAcademicTermsRouteWithChildren
+  '/api/academic/warnings': typeof ApiAcademicWarningsRouteWithChildren
+  '/api/academic/years': typeof ApiAcademicYearsRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/session': typeof ApiAuthSessionRoute
+  '/api/branches/$id': typeof ApiBranchesIdRouteWithChildren
+  '/api/finance/expenses': typeof ApiFinanceExpensesRouteWithChildren
+  '/api/finance/fee-types': typeof ApiFinanceFeeTypesRouteWithChildren
+  '/api/finance/payments': typeof ApiFinancePaymentsRouteWithChildren
   '/api/media/cover': typeof ApiMediaCoverRoute
   '/api/news/$id': typeof ApiNewsIdRoute
   '/api/news/manage': typeof ApiNewsManageRoute
   '/api/notifications/read': typeof ApiNotificationsReadRoute
   '/api/notifications/sent': typeof ApiNotificationsSentRoute
+  '/api/students/$id': typeof ApiStudentsIdRouteWithChildren
+  '/api/students/me': typeof ApiStudentsMeRoute
+  '/api/teachers/$id': typeof ApiTeachersIdRoute
+  '/api/teaching-assignments/$id': typeof ApiTeachingAssignmentsIdRoute
   '/api/users/$id': typeof ApiUsersIdRouteWithChildren
   '/api/users/migrate': typeof ApiUsersMigrateRoute
+  '/api/academic/assessments/$id': typeof ApiAcademicAssessmentsIdRoute
+  '/api/academic/attendance/$id': typeof ApiAcademicAttendanceIdRoute
+  '/api/academic/classes/$id': typeof ApiAcademicClassesIdRouteWithChildren
+  '/api/academic/exam-sessions/$id': typeof ApiAcademicExamSessionsIdRoute
+  '/api/academic/grades/$id': typeof ApiAcademicGradesIdRoute
+  '/api/academic/subjects/$id': typeof ApiAcademicSubjectsIdRoute
+  '/api/academic/terms/$id': typeof ApiAcademicTermsIdRoute
+  '/api/academic/warnings/$id': typeof ApiAcademicWarningsIdRoute
+  '/api/academic/years/$id': typeof ApiAcademicYearsIdRoute
+  '/api/branches/$id/branch-head': typeof ApiBranchesIdBranchHeadRoute
+  '/api/branches/$id/duties': typeof ApiBranchesIdDutiesRouteWithChildren
+  '/api/branches/$id/financial-officer': typeof ApiBranchesIdFinancialOfficerRoute
+  '/api/branches/$id/members': typeof ApiBranchesIdMembersRoute
+  '/api/branches/$id/teachers': typeof ApiBranchesIdTeachersRoute
   '/api/documents/$id/archive': typeof ApiDocumentsIdArchiveRoute
   '/api/documents/$id/download': typeof ApiDocumentsIdDownloadRoute
+  '/api/finance/expenses/$id': typeof ApiFinanceExpensesIdRoute
+  '/api/finance/fee-types/$id': typeof ApiFinanceFeeTypesIdRoute
+  '/api/finance/payments/$id': typeof ApiFinancePaymentsIdRoute
+  '/api/students/$id/promote': typeof ApiStudentsIdPromoteRoute
+  '/api/students/$id/transfer': typeof ApiStudentsIdTransferRoute
   '/api/users/$id/reset-password': typeof ApiUsersIdResetPasswordRoute
+  '/api/academic/classes/$id/class-subjects': typeof ApiAcademicClassesIdClassSubjectsRouteWithChildren
+  '/api/academic/classes/$id/results': typeof ApiAcademicClassesIdResultsRoute
+  '/api/academic/classes/$id/timetable': typeof ApiAcademicClassesIdTimetableRouteWithChildren
+  '/api/academic/classes/$id/transfer': typeof ApiAcademicClassesIdTransferRoute
+  '/api/branches/$id/duties/$responsibilityId': typeof ApiBranchesIdDutiesResponsibilityIdRoute
+  '/api/academic/classes/$id/class-subjects/$subjectId': typeof ApiAcademicClassesIdClassSubjectsSubjectIdRoute
+  '/api/academic/classes/$id/timetable/$entryId': typeof ApiAcademicClassesIdTimetableEntryIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -415,6 +850,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/programs'
     | '/api/audit'
+    | '/api/branches'
     | '/api/contact'
     | '/api/documents'
     | '/api/news'
@@ -422,8 +858,10 @@ export interface FileRouteTypes {
     | '/api/school'
     | '/api/site-settings'
     | '/api/student'
+    | '/api/students'
     | '/api/teacher'
     | '/api/teachers'
+    | '/api/teaching-assignments'
     | '/api/users'
     | '/app/academic'
     | '/app/accountant'
@@ -434,19 +872,63 @@ export interface FileRouteTypes {
     | '/app/supervisor'
     | '/app/teacher'
     | '/media/$file'
+    | '/api/academic/assessment-types'
+    | '/api/academic/assessments'
+    | '/api/academic/attendance'
+    | '/api/academic/classes'
+    | '/api/academic/exam-sessions'
+    | '/api/academic/grades'
+    | '/api/academic/subjects'
+    | '/api/academic/terms'
+    | '/api/academic/warnings'
+    | '/api/academic/years'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/session'
+    | '/api/branches/$id'
+    | '/api/finance/expenses'
+    | '/api/finance/fee-types'
+    | '/api/finance/payments'
     | '/api/media/cover'
     | '/api/news/$id'
     | '/api/news/manage'
     | '/api/notifications/read'
     | '/api/notifications/sent'
+    | '/api/students/$id'
+    | '/api/students/me'
+    | '/api/teachers/$id'
+    | '/api/teaching-assignments/$id'
     | '/api/users/$id'
     | '/api/users/migrate'
+    | '/api/academic/assessments/$id'
+    | '/api/academic/attendance/$id'
+    | '/api/academic/classes/$id'
+    | '/api/academic/exam-sessions/$id'
+    | '/api/academic/grades/$id'
+    | '/api/academic/subjects/$id'
+    | '/api/academic/terms/$id'
+    | '/api/academic/warnings/$id'
+    | '/api/academic/years/$id'
+    | '/api/branches/$id/branch-head'
+    | '/api/branches/$id/duties'
+    | '/api/branches/$id/financial-officer'
+    | '/api/branches/$id/members'
+    | '/api/branches/$id/teachers'
     | '/api/documents/$id/archive'
     | '/api/documents/$id/download'
+    | '/api/finance/expenses/$id'
+    | '/api/finance/fee-types/$id'
+    | '/api/finance/payments/$id'
+    | '/api/students/$id/promote'
+    | '/api/students/$id/transfer'
     | '/api/users/$id/reset-password'
+    | '/api/academic/classes/$id/class-subjects'
+    | '/api/academic/classes/$id/results'
+    | '/api/academic/classes/$id/timetable'
+    | '/api/academic/classes/$id/transfer'
+    | '/api/branches/$id/duties/$responsibilityId'
+    | '/api/academic/classes/$id/class-subjects/$subjectId'
+    | '/api/academic/classes/$id/timetable/$entryId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/app'
@@ -458,6 +940,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/programs'
     | '/api/audit'
+    | '/api/branches'
     | '/api/contact'
     | '/api/documents'
     | '/api/news'
@@ -465,8 +948,10 @@ export interface FileRouteTypes {
     | '/api/school'
     | '/api/site-settings'
     | '/api/student'
+    | '/api/students'
     | '/api/teacher'
     | '/api/teachers'
+    | '/api/teaching-assignments'
     | '/api/users'
     | '/app/academic'
     | '/app/accountant'
@@ -478,19 +963,63 @@ export interface FileRouteTypes {
     | '/app/teacher'
     | '/media/$file'
     | '/'
+    | '/api/academic/assessment-types'
+    | '/api/academic/assessments'
+    | '/api/academic/attendance'
+    | '/api/academic/classes'
+    | '/api/academic/exam-sessions'
+    | '/api/academic/grades'
+    | '/api/academic/subjects'
+    | '/api/academic/terms'
+    | '/api/academic/warnings'
+    | '/api/academic/years'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/session'
+    | '/api/branches/$id'
+    | '/api/finance/expenses'
+    | '/api/finance/fee-types'
+    | '/api/finance/payments'
     | '/api/media/cover'
     | '/api/news/$id'
     | '/api/news/manage'
     | '/api/notifications/read'
     | '/api/notifications/sent'
+    | '/api/students/$id'
+    | '/api/students/me'
+    | '/api/teachers/$id'
+    | '/api/teaching-assignments/$id'
     | '/api/users/$id'
     | '/api/users/migrate'
+    | '/api/academic/assessments/$id'
+    | '/api/academic/attendance/$id'
+    | '/api/academic/classes/$id'
+    | '/api/academic/exam-sessions/$id'
+    | '/api/academic/grades/$id'
+    | '/api/academic/subjects/$id'
+    | '/api/academic/terms/$id'
+    | '/api/academic/warnings/$id'
+    | '/api/academic/years/$id'
+    | '/api/branches/$id/branch-head'
+    | '/api/branches/$id/duties'
+    | '/api/branches/$id/financial-officer'
+    | '/api/branches/$id/members'
+    | '/api/branches/$id/teachers'
     | '/api/documents/$id/archive'
     | '/api/documents/$id/download'
+    | '/api/finance/expenses/$id'
+    | '/api/finance/fee-types/$id'
+    | '/api/finance/payments/$id'
+    | '/api/students/$id/promote'
+    | '/api/students/$id/transfer'
     | '/api/users/$id/reset-password'
+    | '/api/academic/classes/$id/class-subjects'
+    | '/api/academic/classes/$id/results'
+    | '/api/academic/classes/$id/timetable'
+    | '/api/academic/classes/$id/transfer'
+    | '/api/branches/$id/duties/$responsibilityId'
+    | '/api/academic/classes/$id/class-subjects/$subjectId'
+    | '/api/academic/classes/$id/timetable/$entryId'
   id:
     | '__root__'
     | '/_marketing'
@@ -503,6 +1032,7 @@ export interface FileRouteTypes {
     | '/_marketing/news'
     | '/_marketing/programs'
     | '/api/audit'
+    | '/api/branches'
     | '/api/contact'
     | '/api/documents'
     | '/api/news'
@@ -510,8 +1040,10 @@ export interface FileRouteTypes {
     | '/api/school'
     | '/api/site-settings'
     | '/api/student'
+    | '/api/students'
     | '/api/teacher'
     | '/api/teachers'
+    | '/api/teaching-assignments'
     | '/api/users'
     | '/app/academic'
     | '/app/accountant'
@@ -523,19 +1055,63 @@ export interface FileRouteTypes {
     | '/app/teacher'
     | '/media/$file'
     | '/_marketing/'
+    | '/api/academic/assessment-types'
+    | '/api/academic/assessments'
+    | '/api/academic/attendance'
+    | '/api/academic/classes'
+    | '/api/academic/exam-sessions'
+    | '/api/academic/grades'
+    | '/api/academic/subjects'
+    | '/api/academic/terms'
+    | '/api/academic/warnings'
+    | '/api/academic/years'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/session'
+    | '/api/branches/$id'
+    | '/api/finance/expenses'
+    | '/api/finance/fee-types'
+    | '/api/finance/payments'
     | '/api/media/cover'
     | '/api/news/$id'
     | '/api/news/manage'
     | '/api/notifications/read'
     | '/api/notifications/sent'
+    | '/api/students/$id'
+    | '/api/students/me'
+    | '/api/teachers/$id'
+    | '/api/teaching-assignments/$id'
     | '/api/users/$id'
     | '/api/users/migrate'
+    | '/api/academic/assessments/$id'
+    | '/api/academic/attendance/$id'
+    | '/api/academic/classes/$id'
+    | '/api/academic/exam-sessions/$id'
+    | '/api/academic/grades/$id'
+    | '/api/academic/subjects/$id'
+    | '/api/academic/terms/$id'
+    | '/api/academic/warnings/$id'
+    | '/api/academic/years/$id'
+    | '/api/branches/$id/branch-head'
+    | '/api/branches/$id/duties'
+    | '/api/branches/$id/financial-officer'
+    | '/api/branches/$id/members'
+    | '/api/branches/$id/teachers'
     | '/api/documents/$id/archive'
     | '/api/documents/$id/download'
+    | '/api/finance/expenses/$id'
+    | '/api/finance/fee-types/$id'
+    | '/api/finance/payments/$id'
+    | '/api/students/$id/promote'
+    | '/api/students/$id/transfer'
     | '/api/users/$id/reset-password'
+    | '/api/academic/classes/$id/class-subjects'
+    | '/api/academic/classes/$id/results'
+    | '/api/academic/classes/$id/timetable'
+    | '/api/academic/classes/$id/transfer'
+    | '/api/branches/$id/duties/$responsibilityId'
+    | '/api/academic/classes/$id/class-subjects/$subjectId'
+    | '/api/academic/classes/$id/timetable/$entryId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -544,6 +1120,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiAuditRoute: typeof ApiAuditRoute
+  ApiBranchesRoute: typeof ApiBranchesRouteWithChildren
   ApiContactRoute: typeof ApiContactRoute
   ApiDocumentsRoute: typeof ApiDocumentsRouteWithChildren
   ApiNewsRoute: typeof ApiNewsRouteWithChildren
@@ -551,13 +1128,28 @@ export interface RootRouteChildren {
   ApiSchoolRoute: typeof ApiSchoolRoute
   ApiSiteSettingsRoute: typeof ApiSiteSettingsRoute
   ApiStudentRoute: typeof ApiStudentRoute
+  ApiStudentsRoute: typeof ApiStudentsRouteWithChildren
   ApiTeacherRoute: typeof ApiTeacherRoute
-  ApiTeachersRoute: typeof ApiTeachersRoute
+  ApiTeachersRoute: typeof ApiTeachersRouteWithChildren
+  ApiTeachingAssignmentsRoute: typeof ApiTeachingAssignmentsRouteWithChildren
   ApiUsersRoute: typeof ApiUsersRouteWithChildren
   MediaFileRoute: typeof MediaFileRoute
+  ApiAcademicAssessmentTypesRoute: typeof ApiAcademicAssessmentTypesRoute
+  ApiAcademicAssessmentsRoute: typeof ApiAcademicAssessmentsRouteWithChildren
+  ApiAcademicAttendanceRoute: typeof ApiAcademicAttendanceRouteWithChildren
+  ApiAcademicClassesRoute: typeof ApiAcademicClassesRouteWithChildren
+  ApiAcademicExamSessionsRoute: typeof ApiAcademicExamSessionsRouteWithChildren
+  ApiAcademicGradesRoute: typeof ApiAcademicGradesRouteWithChildren
+  ApiAcademicSubjectsRoute: typeof ApiAcademicSubjectsRouteWithChildren
+  ApiAcademicTermsRoute: typeof ApiAcademicTermsRouteWithChildren
+  ApiAcademicWarningsRoute: typeof ApiAcademicWarningsRouteWithChildren
+  ApiAcademicYearsRoute: typeof ApiAcademicYearsRouteWithChildren
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthSessionRoute: typeof ApiAuthSessionRoute
+  ApiFinanceExpensesRoute: typeof ApiFinanceExpensesRouteWithChildren
+  ApiFinanceFeeTypesRoute: typeof ApiFinanceFeeTypesRouteWithChildren
+  ApiFinancePaymentsRoute: typeof ApiFinancePaymentsRouteWithChildren
   ApiMediaCoverRoute: typeof ApiMediaCoverRoute
 }
 
@@ -640,6 +1232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/branches': {
+      id: '/api/branches'
+      path: '/api/branches'
+      fullPath: '/api/branches'
+      preLoaderRoute: typeof ApiBranchesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/contact': {
       id: '/api/contact'
       path: '/api/contact'
@@ -689,6 +1288,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStudentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/students': {
+      id: '/api/students'
+      path: '/api/students'
+      fullPath: '/api/students'
+      preLoaderRoute: typeof ApiStudentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/teacher': {
       id: '/api/teacher'
       path: '/api/teacher'
@@ -701,6 +1307,13 @@ declare module '@tanstack/react-router' {
       path: '/api/teachers'
       fullPath: '/api/teachers'
       preLoaderRoute: typeof ApiTeachersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/teaching-assignments': {
+      id: '/api/teaching-assignments'
+      path: '/api/teaching-assignments'
+      fullPath: '/api/teaching-assignments'
+      preLoaderRoute: typeof ApiTeachingAssignmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/users': {
@@ -773,6 +1386,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MediaFileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/academic/assessment-types': {
+      id: '/api/academic/assessment-types'
+      path: '/api/academic/assessment-types'
+      fullPath: '/api/academic/assessment-types'
+      preLoaderRoute: typeof ApiAcademicAssessmentTypesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/assessments': {
+      id: '/api/academic/assessments'
+      path: '/api/academic/assessments'
+      fullPath: '/api/academic/assessments'
+      preLoaderRoute: typeof ApiAcademicAssessmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/attendance': {
+      id: '/api/academic/attendance'
+      path: '/api/academic/attendance'
+      fullPath: '/api/academic/attendance'
+      preLoaderRoute: typeof ApiAcademicAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/classes': {
+      id: '/api/academic/classes'
+      path: '/api/academic/classes'
+      fullPath: '/api/academic/classes'
+      preLoaderRoute: typeof ApiAcademicClassesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/exam-sessions': {
+      id: '/api/academic/exam-sessions'
+      path: '/api/academic/exam-sessions'
+      fullPath: '/api/academic/exam-sessions'
+      preLoaderRoute: typeof ApiAcademicExamSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/grades': {
+      id: '/api/academic/grades'
+      path: '/api/academic/grades'
+      fullPath: '/api/academic/grades'
+      preLoaderRoute: typeof ApiAcademicGradesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/subjects': {
+      id: '/api/academic/subjects'
+      path: '/api/academic/subjects'
+      fullPath: '/api/academic/subjects'
+      preLoaderRoute: typeof ApiAcademicSubjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/terms': {
+      id: '/api/academic/terms'
+      path: '/api/academic/terms'
+      fullPath: '/api/academic/terms'
+      preLoaderRoute: typeof ApiAcademicTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/warnings': {
+      id: '/api/academic/warnings'
+      path: '/api/academic/warnings'
+      fullPath: '/api/academic/warnings'
+      preLoaderRoute: typeof ApiAcademicWarningsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/academic/years': {
+      id: '/api/academic/years'
+      path: '/api/academic/years'
+      fullPath: '/api/academic/years'
+      preLoaderRoute: typeof ApiAcademicYearsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/login': {
       id: '/api/auth/login'
       path: '/api/auth/login'
@@ -792,6 +1475,34 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/session'
       fullPath: '/api/auth/session'
       preLoaderRoute: typeof ApiAuthSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/branches/$id': {
+      id: '/api/branches/$id'
+      path: '/$id'
+      fullPath: '/api/branches/$id'
+      preLoaderRoute: typeof ApiBranchesIdRouteImport
+      parentRoute: typeof ApiBranchesRoute
+    }
+    '/api/finance/expenses': {
+      id: '/api/finance/expenses'
+      path: '/api/finance/expenses'
+      fullPath: '/api/finance/expenses'
+      preLoaderRoute: typeof ApiFinanceExpensesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/finance/fee-types': {
+      id: '/api/finance/fee-types'
+      path: '/api/finance/fee-types'
+      fullPath: '/api/finance/fee-types'
+      preLoaderRoute: typeof ApiFinanceFeeTypesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/finance/payments': {
+      id: '/api/finance/payments'
+      path: '/api/finance/payments'
+      fullPath: '/api/finance/payments'
+      preLoaderRoute: typeof ApiFinancePaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/media/cover': {
@@ -829,6 +1540,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiNotificationsSentRouteImport
       parentRoute: typeof ApiNotificationsRoute
     }
+    '/api/students/$id': {
+      id: '/api/students/$id'
+      path: '/$id'
+      fullPath: '/api/students/$id'
+      preLoaderRoute: typeof ApiStudentsIdRouteImport
+      parentRoute: typeof ApiStudentsRoute
+    }
+    '/api/students/me': {
+      id: '/api/students/me'
+      path: '/me'
+      fullPath: '/api/students/me'
+      preLoaderRoute: typeof ApiStudentsMeRouteImport
+      parentRoute: typeof ApiStudentsRoute
+    }
+    '/api/teachers/$id': {
+      id: '/api/teachers/$id'
+      path: '/$id'
+      fullPath: '/api/teachers/$id'
+      preLoaderRoute: typeof ApiTeachersIdRouteImport
+      parentRoute: typeof ApiTeachersRoute
+    }
+    '/api/teaching-assignments/$id': {
+      id: '/api/teaching-assignments/$id'
+      path: '/$id'
+      fullPath: '/api/teaching-assignments/$id'
+      preLoaderRoute: typeof ApiTeachingAssignmentsIdRouteImport
+      parentRoute: typeof ApiTeachingAssignmentsRoute
+    }
     '/api/users/$id': {
       id: '/api/users/$id'
       path: '/$id'
@@ -842,6 +1581,104 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/users/migrate'
       preLoaderRoute: typeof ApiUsersMigrateRouteImport
       parentRoute: typeof ApiUsersRoute
+    }
+    '/api/academic/assessments/$id': {
+      id: '/api/academic/assessments/$id'
+      path: '/$id'
+      fullPath: '/api/academic/assessments/$id'
+      preLoaderRoute: typeof ApiAcademicAssessmentsIdRouteImport
+      parentRoute: typeof ApiAcademicAssessmentsRoute
+    }
+    '/api/academic/attendance/$id': {
+      id: '/api/academic/attendance/$id'
+      path: '/$id'
+      fullPath: '/api/academic/attendance/$id'
+      preLoaderRoute: typeof ApiAcademicAttendanceIdRouteImport
+      parentRoute: typeof ApiAcademicAttendanceRoute
+    }
+    '/api/academic/classes/$id': {
+      id: '/api/academic/classes/$id'
+      path: '/$id'
+      fullPath: '/api/academic/classes/$id'
+      preLoaderRoute: typeof ApiAcademicClassesIdRouteImport
+      parentRoute: typeof ApiAcademicClassesRoute
+    }
+    '/api/academic/exam-sessions/$id': {
+      id: '/api/academic/exam-sessions/$id'
+      path: '/$id'
+      fullPath: '/api/academic/exam-sessions/$id'
+      preLoaderRoute: typeof ApiAcademicExamSessionsIdRouteImport
+      parentRoute: typeof ApiAcademicExamSessionsRoute
+    }
+    '/api/academic/grades/$id': {
+      id: '/api/academic/grades/$id'
+      path: '/$id'
+      fullPath: '/api/academic/grades/$id'
+      preLoaderRoute: typeof ApiAcademicGradesIdRouteImport
+      parentRoute: typeof ApiAcademicGradesRoute
+    }
+    '/api/academic/subjects/$id': {
+      id: '/api/academic/subjects/$id'
+      path: '/$id'
+      fullPath: '/api/academic/subjects/$id'
+      preLoaderRoute: typeof ApiAcademicSubjectsIdRouteImport
+      parentRoute: typeof ApiAcademicSubjectsRoute
+    }
+    '/api/academic/terms/$id': {
+      id: '/api/academic/terms/$id'
+      path: '/$id'
+      fullPath: '/api/academic/terms/$id'
+      preLoaderRoute: typeof ApiAcademicTermsIdRouteImport
+      parentRoute: typeof ApiAcademicTermsRoute
+    }
+    '/api/academic/warnings/$id': {
+      id: '/api/academic/warnings/$id'
+      path: '/$id'
+      fullPath: '/api/academic/warnings/$id'
+      preLoaderRoute: typeof ApiAcademicWarningsIdRouteImport
+      parentRoute: typeof ApiAcademicWarningsRoute
+    }
+    '/api/academic/years/$id': {
+      id: '/api/academic/years/$id'
+      path: '/$id'
+      fullPath: '/api/academic/years/$id'
+      preLoaderRoute: typeof ApiAcademicYearsIdRouteImport
+      parentRoute: typeof ApiAcademicYearsRoute
+    }
+    '/api/branches/$id/branch-head': {
+      id: '/api/branches/$id/branch-head'
+      path: '/branch-head'
+      fullPath: '/api/branches/$id/branch-head'
+      preLoaderRoute: typeof ApiBranchesIdBranchHeadRouteImport
+      parentRoute: typeof ApiBranchesIdRoute
+    }
+    '/api/branches/$id/duties': {
+      id: '/api/branches/$id/duties'
+      path: '/duties'
+      fullPath: '/api/branches/$id/duties'
+      preLoaderRoute: typeof ApiBranchesIdDutiesRouteImport
+      parentRoute: typeof ApiBranchesIdRoute
+    }
+    '/api/branches/$id/financial-officer': {
+      id: '/api/branches/$id/financial-officer'
+      path: '/financial-officer'
+      fullPath: '/api/branches/$id/financial-officer'
+      preLoaderRoute: typeof ApiBranchesIdFinancialOfficerRouteImport
+      parentRoute: typeof ApiBranchesIdRoute
+    }
+    '/api/branches/$id/members': {
+      id: '/api/branches/$id/members'
+      path: '/members'
+      fullPath: '/api/branches/$id/members'
+      preLoaderRoute: typeof ApiBranchesIdMembersRouteImport
+      parentRoute: typeof ApiBranchesIdRoute
+    }
+    '/api/branches/$id/teachers': {
+      id: '/api/branches/$id/teachers'
+      path: '/teachers'
+      fullPath: '/api/branches/$id/teachers'
+      preLoaderRoute: typeof ApiBranchesIdTeachersRouteImport
+      parentRoute: typeof ApiBranchesIdRoute
     }
     '/api/documents/$id/archive': {
       id: '/api/documents/$id/archive'
@@ -857,12 +1694,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDocumentsIdDownloadRouteImport
       parentRoute: typeof ApiDocumentsRoute
     }
+    '/api/finance/expenses/$id': {
+      id: '/api/finance/expenses/$id'
+      path: '/$id'
+      fullPath: '/api/finance/expenses/$id'
+      preLoaderRoute: typeof ApiFinanceExpensesIdRouteImport
+      parentRoute: typeof ApiFinanceExpensesRoute
+    }
+    '/api/finance/fee-types/$id': {
+      id: '/api/finance/fee-types/$id'
+      path: '/$id'
+      fullPath: '/api/finance/fee-types/$id'
+      preLoaderRoute: typeof ApiFinanceFeeTypesIdRouteImport
+      parentRoute: typeof ApiFinanceFeeTypesRoute
+    }
+    '/api/finance/payments/$id': {
+      id: '/api/finance/payments/$id'
+      path: '/$id'
+      fullPath: '/api/finance/payments/$id'
+      preLoaderRoute: typeof ApiFinancePaymentsIdRouteImport
+      parentRoute: typeof ApiFinancePaymentsRoute
+    }
+    '/api/students/$id/promote': {
+      id: '/api/students/$id/promote'
+      path: '/promote'
+      fullPath: '/api/students/$id/promote'
+      preLoaderRoute: typeof ApiStudentsIdPromoteRouteImport
+      parentRoute: typeof ApiStudentsIdRoute
+    }
+    '/api/students/$id/transfer': {
+      id: '/api/students/$id/transfer'
+      path: '/transfer'
+      fullPath: '/api/students/$id/transfer'
+      preLoaderRoute: typeof ApiStudentsIdTransferRouteImport
+      parentRoute: typeof ApiStudentsIdRoute
+    }
     '/api/users/$id/reset-password': {
       id: '/api/users/$id/reset-password'
       path: '/reset-password'
       fullPath: '/api/users/$id/reset-password'
       preLoaderRoute: typeof ApiUsersIdResetPasswordRouteImport
       parentRoute: typeof ApiUsersIdRoute
+    }
+    '/api/academic/classes/$id/class-subjects': {
+      id: '/api/academic/classes/$id/class-subjects'
+      path: '/class-subjects'
+      fullPath: '/api/academic/classes/$id/class-subjects'
+      preLoaderRoute: typeof ApiAcademicClassesIdClassSubjectsRouteImport
+      parentRoute: typeof ApiAcademicClassesIdRoute
+    }
+    '/api/academic/classes/$id/results': {
+      id: '/api/academic/classes/$id/results'
+      path: '/results'
+      fullPath: '/api/academic/classes/$id/results'
+      preLoaderRoute: typeof ApiAcademicClassesIdResultsRouteImport
+      parentRoute: typeof ApiAcademicClassesIdRoute
+    }
+    '/api/academic/classes/$id/timetable': {
+      id: '/api/academic/classes/$id/timetable'
+      path: '/timetable'
+      fullPath: '/api/academic/classes/$id/timetable'
+      preLoaderRoute: typeof ApiAcademicClassesIdTimetableRouteImport
+      parentRoute: typeof ApiAcademicClassesIdRoute
+    }
+    '/api/academic/classes/$id/transfer': {
+      id: '/api/academic/classes/$id/transfer'
+      path: '/transfer'
+      fullPath: '/api/academic/classes/$id/transfer'
+      preLoaderRoute: typeof ApiAcademicClassesIdTransferRouteImport
+      parentRoute: typeof ApiAcademicClassesIdRoute
+    }
+    '/api/branches/$id/duties/$responsibilityId': {
+      id: '/api/branches/$id/duties/$responsibilityId'
+      path: '/$responsibilityId'
+      fullPath: '/api/branches/$id/duties/$responsibilityId'
+      preLoaderRoute: typeof ApiBranchesIdDutiesResponsibilityIdRouteImport
+      parentRoute: typeof ApiBranchesIdDutiesRoute
+    }
+    '/api/academic/classes/$id/class-subjects/$subjectId': {
+      id: '/api/academic/classes/$id/class-subjects/$subjectId'
+      path: '/$subjectId'
+      fullPath: '/api/academic/classes/$id/class-subjects/$subjectId'
+      preLoaderRoute: typeof ApiAcademicClassesIdClassSubjectsSubjectIdRouteImport
+      parentRoute: typeof ApiAcademicClassesIdClassSubjectsRoute
+    }
+    '/api/academic/classes/$id/timetable/$entryId': {
+      id: '/api/academic/classes/$id/timetable/$entryId'
+      path: '/$entryId'
+      fullPath: '/api/academic/classes/$id/timetable/$entryId'
+      preLoaderRoute: typeof ApiAcademicClassesIdTimetableEntryIdRouteImport
+      parentRoute: typeof ApiAcademicClassesIdTimetableRoute
     }
   }
 }
@@ -913,6 +1834,50 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface ApiBranchesIdDutiesRouteChildren {
+  ApiBranchesIdDutiesResponsibilityIdRoute: typeof ApiBranchesIdDutiesResponsibilityIdRoute
+}
+
+const ApiBranchesIdDutiesRouteChildren: ApiBranchesIdDutiesRouteChildren = {
+  ApiBranchesIdDutiesResponsibilityIdRoute:
+    ApiBranchesIdDutiesResponsibilityIdRoute,
+}
+
+const ApiBranchesIdDutiesRouteWithChildren =
+  ApiBranchesIdDutiesRoute._addFileChildren(ApiBranchesIdDutiesRouteChildren)
+
+interface ApiBranchesIdRouteChildren {
+  ApiBranchesIdBranchHeadRoute: typeof ApiBranchesIdBranchHeadRoute
+  ApiBranchesIdDutiesRoute: typeof ApiBranchesIdDutiesRouteWithChildren
+  ApiBranchesIdFinancialOfficerRoute: typeof ApiBranchesIdFinancialOfficerRoute
+  ApiBranchesIdMembersRoute: typeof ApiBranchesIdMembersRoute
+  ApiBranchesIdTeachersRoute: typeof ApiBranchesIdTeachersRoute
+}
+
+const ApiBranchesIdRouteChildren: ApiBranchesIdRouteChildren = {
+  ApiBranchesIdBranchHeadRoute: ApiBranchesIdBranchHeadRoute,
+  ApiBranchesIdDutiesRoute: ApiBranchesIdDutiesRouteWithChildren,
+  ApiBranchesIdFinancialOfficerRoute: ApiBranchesIdFinancialOfficerRoute,
+  ApiBranchesIdMembersRoute: ApiBranchesIdMembersRoute,
+  ApiBranchesIdTeachersRoute: ApiBranchesIdTeachersRoute,
+}
+
+const ApiBranchesIdRouteWithChildren = ApiBranchesIdRoute._addFileChildren(
+  ApiBranchesIdRouteChildren,
+)
+
+interface ApiBranchesRouteChildren {
+  ApiBranchesIdRoute: typeof ApiBranchesIdRouteWithChildren
+}
+
+const ApiBranchesRouteChildren: ApiBranchesRouteChildren = {
+  ApiBranchesIdRoute: ApiBranchesIdRouteWithChildren,
+}
+
+const ApiBranchesRouteWithChildren = ApiBranchesRoute._addFileChildren(
+  ApiBranchesRouteChildren,
+)
+
 interface ApiDocumentsRouteChildren {
   ApiDocumentsIdArchiveRoute: typeof ApiDocumentsIdArchiveRoute
   ApiDocumentsIdDownloadRoute: typeof ApiDocumentsIdDownloadRoute
@@ -953,6 +1918,60 @@ const ApiNotificationsRouteChildren: ApiNotificationsRouteChildren = {
 const ApiNotificationsRouteWithChildren =
   ApiNotificationsRoute._addFileChildren(ApiNotificationsRouteChildren)
 
+interface ApiStudentsIdRouteChildren {
+  ApiStudentsIdPromoteRoute: typeof ApiStudentsIdPromoteRoute
+  ApiStudentsIdTransferRoute: typeof ApiStudentsIdTransferRoute
+}
+
+const ApiStudentsIdRouteChildren: ApiStudentsIdRouteChildren = {
+  ApiStudentsIdPromoteRoute: ApiStudentsIdPromoteRoute,
+  ApiStudentsIdTransferRoute: ApiStudentsIdTransferRoute,
+}
+
+const ApiStudentsIdRouteWithChildren = ApiStudentsIdRoute._addFileChildren(
+  ApiStudentsIdRouteChildren,
+)
+
+interface ApiStudentsRouteChildren {
+  ApiStudentsIdRoute: typeof ApiStudentsIdRouteWithChildren
+  ApiStudentsMeRoute: typeof ApiStudentsMeRoute
+}
+
+const ApiStudentsRouteChildren: ApiStudentsRouteChildren = {
+  ApiStudentsIdRoute: ApiStudentsIdRouteWithChildren,
+  ApiStudentsMeRoute: ApiStudentsMeRoute,
+}
+
+const ApiStudentsRouteWithChildren = ApiStudentsRoute._addFileChildren(
+  ApiStudentsRouteChildren,
+)
+
+interface ApiTeachersRouteChildren {
+  ApiTeachersIdRoute: typeof ApiTeachersIdRoute
+}
+
+const ApiTeachersRouteChildren: ApiTeachersRouteChildren = {
+  ApiTeachersIdRoute: ApiTeachersIdRoute,
+}
+
+const ApiTeachersRouteWithChildren = ApiTeachersRoute._addFileChildren(
+  ApiTeachersRouteChildren,
+)
+
+interface ApiTeachingAssignmentsRouteChildren {
+  ApiTeachingAssignmentsIdRoute: typeof ApiTeachingAssignmentsIdRoute
+}
+
+const ApiTeachingAssignmentsRouteChildren: ApiTeachingAssignmentsRouteChildren =
+  {
+    ApiTeachingAssignmentsIdRoute: ApiTeachingAssignmentsIdRoute,
+  }
+
+const ApiTeachingAssignmentsRouteWithChildren =
+  ApiTeachingAssignmentsRoute._addFileChildren(
+    ApiTeachingAssignmentsRouteChildren,
+  )
+
 interface ApiUsersIdRouteChildren {
   ApiUsersIdResetPasswordRoute: typeof ApiUsersIdResetPasswordRoute
 }
@@ -979,12 +1998,202 @@ const ApiUsersRouteWithChildren = ApiUsersRoute._addFileChildren(
   ApiUsersRouteChildren,
 )
 
+interface ApiAcademicAssessmentsRouteChildren {
+  ApiAcademicAssessmentsIdRoute: typeof ApiAcademicAssessmentsIdRoute
+}
+
+const ApiAcademicAssessmentsRouteChildren: ApiAcademicAssessmentsRouteChildren =
+  {
+    ApiAcademicAssessmentsIdRoute: ApiAcademicAssessmentsIdRoute,
+  }
+
+const ApiAcademicAssessmentsRouteWithChildren =
+  ApiAcademicAssessmentsRoute._addFileChildren(
+    ApiAcademicAssessmentsRouteChildren,
+  )
+
+interface ApiAcademicAttendanceRouteChildren {
+  ApiAcademicAttendanceIdRoute: typeof ApiAcademicAttendanceIdRoute
+}
+
+const ApiAcademicAttendanceRouteChildren: ApiAcademicAttendanceRouteChildren = {
+  ApiAcademicAttendanceIdRoute: ApiAcademicAttendanceIdRoute,
+}
+
+const ApiAcademicAttendanceRouteWithChildren =
+  ApiAcademicAttendanceRoute._addFileChildren(
+    ApiAcademicAttendanceRouteChildren,
+  )
+
+interface ApiAcademicClassesIdClassSubjectsRouteChildren {
+  ApiAcademicClassesIdClassSubjectsSubjectIdRoute: typeof ApiAcademicClassesIdClassSubjectsSubjectIdRoute
+}
+
+const ApiAcademicClassesIdClassSubjectsRouteChildren: ApiAcademicClassesIdClassSubjectsRouteChildren =
+  {
+    ApiAcademicClassesIdClassSubjectsSubjectIdRoute:
+      ApiAcademicClassesIdClassSubjectsSubjectIdRoute,
+  }
+
+const ApiAcademicClassesIdClassSubjectsRouteWithChildren =
+  ApiAcademicClassesIdClassSubjectsRoute._addFileChildren(
+    ApiAcademicClassesIdClassSubjectsRouteChildren,
+  )
+
+interface ApiAcademicClassesIdTimetableRouteChildren {
+  ApiAcademicClassesIdTimetableEntryIdRoute: typeof ApiAcademicClassesIdTimetableEntryIdRoute
+}
+
+const ApiAcademicClassesIdTimetableRouteChildren: ApiAcademicClassesIdTimetableRouteChildren =
+  {
+    ApiAcademicClassesIdTimetableEntryIdRoute:
+      ApiAcademicClassesIdTimetableEntryIdRoute,
+  }
+
+const ApiAcademicClassesIdTimetableRouteWithChildren =
+  ApiAcademicClassesIdTimetableRoute._addFileChildren(
+    ApiAcademicClassesIdTimetableRouteChildren,
+  )
+
+interface ApiAcademicClassesIdRouteChildren {
+  ApiAcademicClassesIdClassSubjectsRoute: typeof ApiAcademicClassesIdClassSubjectsRouteWithChildren
+  ApiAcademicClassesIdResultsRoute: typeof ApiAcademicClassesIdResultsRoute
+  ApiAcademicClassesIdTimetableRoute: typeof ApiAcademicClassesIdTimetableRouteWithChildren
+  ApiAcademicClassesIdTransferRoute: typeof ApiAcademicClassesIdTransferRoute
+}
+
+const ApiAcademicClassesIdRouteChildren: ApiAcademicClassesIdRouteChildren = {
+  ApiAcademicClassesIdClassSubjectsRoute:
+    ApiAcademicClassesIdClassSubjectsRouteWithChildren,
+  ApiAcademicClassesIdResultsRoute: ApiAcademicClassesIdResultsRoute,
+  ApiAcademicClassesIdTimetableRoute:
+    ApiAcademicClassesIdTimetableRouteWithChildren,
+  ApiAcademicClassesIdTransferRoute: ApiAcademicClassesIdTransferRoute,
+}
+
+const ApiAcademicClassesIdRouteWithChildren =
+  ApiAcademicClassesIdRoute._addFileChildren(ApiAcademicClassesIdRouteChildren)
+
+interface ApiAcademicClassesRouteChildren {
+  ApiAcademicClassesIdRoute: typeof ApiAcademicClassesIdRouteWithChildren
+}
+
+const ApiAcademicClassesRouteChildren: ApiAcademicClassesRouteChildren = {
+  ApiAcademicClassesIdRoute: ApiAcademicClassesIdRouteWithChildren,
+}
+
+const ApiAcademicClassesRouteWithChildren =
+  ApiAcademicClassesRoute._addFileChildren(ApiAcademicClassesRouteChildren)
+
+interface ApiAcademicExamSessionsRouteChildren {
+  ApiAcademicExamSessionsIdRoute: typeof ApiAcademicExamSessionsIdRoute
+}
+
+const ApiAcademicExamSessionsRouteChildren: ApiAcademicExamSessionsRouteChildren =
+  {
+    ApiAcademicExamSessionsIdRoute: ApiAcademicExamSessionsIdRoute,
+  }
+
+const ApiAcademicExamSessionsRouteWithChildren =
+  ApiAcademicExamSessionsRoute._addFileChildren(
+    ApiAcademicExamSessionsRouteChildren,
+  )
+
+interface ApiAcademicGradesRouteChildren {
+  ApiAcademicGradesIdRoute: typeof ApiAcademicGradesIdRoute
+}
+
+const ApiAcademicGradesRouteChildren: ApiAcademicGradesRouteChildren = {
+  ApiAcademicGradesIdRoute: ApiAcademicGradesIdRoute,
+}
+
+const ApiAcademicGradesRouteWithChildren =
+  ApiAcademicGradesRoute._addFileChildren(ApiAcademicGradesRouteChildren)
+
+interface ApiAcademicSubjectsRouteChildren {
+  ApiAcademicSubjectsIdRoute: typeof ApiAcademicSubjectsIdRoute
+}
+
+const ApiAcademicSubjectsRouteChildren: ApiAcademicSubjectsRouteChildren = {
+  ApiAcademicSubjectsIdRoute: ApiAcademicSubjectsIdRoute,
+}
+
+const ApiAcademicSubjectsRouteWithChildren =
+  ApiAcademicSubjectsRoute._addFileChildren(ApiAcademicSubjectsRouteChildren)
+
+interface ApiAcademicTermsRouteChildren {
+  ApiAcademicTermsIdRoute: typeof ApiAcademicTermsIdRoute
+}
+
+const ApiAcademicTermsRouteChildren: ApiAcademicTermsRouteChildren = {
+  ApiAcademicTermsIdRoute: ApiAcademicTermsIdRoute,
+}
+
+const ApiAcademicTermsRouteWithChildren =
+  ApiAcademicTermsRoute._addFileChildren(ApiAcademicTermsRouteChildren)
+
+interface ApiAcademicWarningsRouteChildren {
+  ApiAcademicWarningsIdRoute: typeof ApiAcademicWarningsIdRoute
+}
+
+const ApiAcademicWarningsRouteChildren: ApiAcademicWarningsRouteChildren = {
+  ApiAcademicWarningsIdRoute: ApiAcademicWarningsIdRoute,
+}
+
+const ApiAcademicWarningsRouteWithChildren =
+  ApiAcademicWarningsRoute._addFileChildren(ApiAcademicWarningsRouteChildren)
+
+interface ApiAcademicYearsRouteChildren {
+  ApiAcademicYearsIdRoute: typeof ApiAcademicYearsIdRoute
+}
+
+const ApiAcademicYearsRouteChildren: ApiAcademicYearsRouteChildren = {
+  ApiAcademicYearsIdRoute: ApiAcademicYearsIdRoute,
+}
+
+const ApiAcademicYearsRouteWithChildren =
+  ApiAcademicYearsRoute._addFileChildren(ApiAcademicYearsRouteChildren)
+
+interface ApiFinanceExpensesRouteChildren {
+  ApiFinanceExpensesIdRoute: typeof ApiFinanceExpensesIdRoute
+}
+
+const ApiFinanceExpensesRouteChildren: ApiFinanceExpensesRouteChildren = {
+  ApiFinanceExpensesIdRoute: ApiFinanceExpensesIdRoute,
+}
+
+const ApiFinanceExpensesRouteWithChildren =
+  ApiFinanceExpensesRoute._addFileChildren(ApiFinanceExpensesRouteChildren)
+
+interface ApiFinanceFeeTypesRouteChildren {
+  ApiFinanceFeeTypesIdRoute: typeof ApiFinanceFeeTypesIdRoute
+}
+
+const ApiFinanceFeeTypesRouteChildren: ApiFinanceFeeTypesRouteChildren = {
+  ApiFinanceFeeTypesIdRoute: ApiFinanceFeeTypesIdRoute,
+}
+
+const ApiFinanceFeeTypesRouteWithChildren =
+  ApiFinanceFeeTypesRoute._addFileChildren(ApiFinanceFeeTypesRouteChildren)
+
+interface ApiFinancePaymentsRouteChildren {
+  ApiFinancePaymentsIdRoute: typeof ApiFinancePaymentsIdRoute
+}
+
+const ApiFinancePaymentsRouteChildren: ApiFinancePaymentsRouteChildren = {
+  ApiFinancePaymentsIdRoute: ApiFinancePaymentsIdRoute,
+}
+
+const ApiFinancePaymentsRouteWithChildren =
+  ApiFinancePaymentsRoute._addFileChildren(ApiFinancePaymentsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   MarketingRoute: MarketingRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   WelcomeRoute: WelcomeRoute,
   ApiAuditRoute: ApiAuditRoute,
+  ApiBranchesRoute: ApiBranchesRouteWithChildren,
   ApiContactRoute: ApiContactRoute,
   ApiDocumentsRoute: ApiDocumentsRouteWithChildren,
   ApiNewsRoute: ApiNewsRouteWithChildren,
@@ -992,13 +2201,28 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSchoolRoute: ApiSchoolRoute,
   ApiSiteSettingsRoute: ApiSiteSettingsRoute,
   ApiStudentRoute: ApiStudentRoute,
+  ApiStudentsRoute: ApiStudentsRouteWithChildren,
   ApiTeacherRoute: ApiTeacherRoute,
-  ApiTeachersRoute: ApiTeachersRoute,
+  ApiTeachersRoute: ApiTeachersRouteWithChildren,
+  ApiTeachingAssignmentsRoute: ApiTeachingAssignmentsRouteWithChildren,
   ApiUsersRoute: ApiUsersRouteWithChildren,
   MediaFileRoute: MediaFileRoute,
+  ApiAcademicAssessmentTypesRoute: ApiAcademicAssessmentTypesRoute,
+  ApiAcademicAssessmentsRoute: ApiAcademicAssessmentsRouteWithChildren,
+  ApiAcademicAttendanceRoute: ApiAcademicAttendanceRouteWithChildren,
+  ApiAcademicClassesRoute: ApiAcademicClassesRouteWithChildren,
+  ApiAcademicExamSessionsRoute: ApiAcademicExamSessionsRouteWithChildren,
+  ApiAcademicGradesRoute: ApiAcademicGradesRouteWithChildren,
+  ApiAcademicSubjectsRoute: ApiAcademicSubjectsRouteWithChildren,
+  ApiAcademicTermsRoute: ApiAcademicTermsRouteWithChildren,
+  ApiAcademicWarningsRoute: ApiAcademicWarningsRouteWithChildren,
+  ApiAcademicYearsRoute: ApiAcademicYearsRouteWithChildren,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthSessionRoute: ApiAuthSessionRoute,
+  ApiFinanceExpensesRoute: ApiFinanceExpensesRouteWithChildren,
+  ApiFinanceFeeTypesRoute: ApiFinanceFeeTypesRouteWithChildren,
+  ApiFinancePaymentsRoute: ApiFinancePaymentsRouteWithChildren,
   ApiMediaCoverRoute: ApiMediaCoverRoute,
 }
 export const routeTree = rootRouteImport

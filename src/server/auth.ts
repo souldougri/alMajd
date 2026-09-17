@@ -717,9 +717,17 @@ export type AuditAction =
   | "user.reset_password"
   | "user.delete"
   | "user.migrate"
+  | "branch.create"
+  | "branch.update"
+  | "branch_head.assign"
+  | "branch_head.remove"
+  | "financial_officer.assign"
+  | "financial_officer.remove"
   | "student.register"
   | "student.update"
   | "student.delete"
+  | "student.transfer"
+  | "student.promote"
   | "class.create"
   | "class.update"
   | "class.delete"
@@ -727,7 +735,13 @@ export type AuditAction =
   | "subject.create"
   | "subject.update"
   | "subject.delete"
+  | "teaching.assign"
+  | "teaching.remove"
+  | "assessment.create"
   | "grade.entry"
+  | "term.create"
+  | "term.update"
+  | "term.delete"
   | "payment.add"
   | "warning.add"
   | "attendance.mark"
@@ -742,24 +756,45 @@ export async function writeAudit(entry: {
   actorName: string;
   targetId?: string;
   targetName?: string;
+  branchId?: string;
+  entityType?: string;
   detail?: string;
 }): Promise<void> {
   await (
     await getDb()
   ).query(
-    `INSERT INTO audit_logs (id, action, actor_id, actor_name, target_id, target_name, detail, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [uid("al"), entry.action, entry.actorId, entry.actorName, entry.targetId ?? null, entry.targetName ?? null, entry.detail ?? null, new Date().toISOString()],
+    `INSERT INTO audit_logs (id, action, actor_id, actor_name, target_id, target_name, branch_id, entity_type, detail, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [
+      uid("al"),
+      entry.action,
+      entry.actorId,
+      entry.actorName,
+      entry.targetId ?? null,
+      entry.targetName ?? null,
+      entry.branchId ?? null,
+      entry.entityType ?? "",
+      entry.detail ?? null,
+      new Date().toISOString(),
+    ],
   );
 }
 
-export async function listAuditLogs(limit = 200): Promise<Array<Record<string, unknown>>> {
+export async function listAuditLogs(limit = 200, branchId?: string): Promise<Array<Record<string, unknown>>> {
+  const params: unknown[] = [];
+  let where = "";
+  if (branchId) {
+    params.push(branchId);
+    where = ` WHERE branch_id = $${params.length}`;
+  }
+  params.push(Math.min(Math.max(limit, 1), 500));
   const result = await (
     await getDb()
   ).query(
-    `SELECT id, action, actor_id, actor_name, target_id, target_name, detail, created_at
-     FROM audit_logs ORDER BY created_at DESC, id DESC LIMIT $1`,
-    [Math.min(Math.max(limit, 1), 500)],
+    `SELECT id, action, actor_id, actor_name, target_id, target_name, branch_id, entity_type, detail, created_at
+     FROM audit_logs${where}
+     ORDER BY created_at DESC, id DESC LIMIT $${params.length}`,
+    params,
   );
   return result.rows.map((row) => ({
     id: String(row.id ?? ""),
@@ -768,6 +803,8 @@ export async function listAuditLogs(limit = 200): Promise<Array<Record<string, u
     actorName: String(row.actor_name ?? ""),
     targetId: String(row.target_id ?? ""),
     targetName: String(row.target_name ?? ""),
+    branchId: row.branch_id ? String(row.branch_id) : undefined,
+    entityType: String(row.entity_type ?? ""),
     detail: String(row.detail ?? ""),
     createdAt: String(row.created_at),
   }));

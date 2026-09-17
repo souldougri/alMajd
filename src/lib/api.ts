@@ -48,6 +48,9 @@ export const api = {
   del<T>(path: string): Promise<ApiResult<T>> {
     return raw<T>("DELETE", path);
   },
+  patch<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
+    return raw<T>("PATCH", path, body);
+  },
   /** Uploads a file via multipart FormData (no Content-Type header — set by the browser). */
   async upload<T>(path: string, form: FormData): Promise<ApiResult<T>> {
     let res: Response;

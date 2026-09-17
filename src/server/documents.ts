@@ -8,10 +8,10 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { getDb, type DbRow } from "./db";
 import { ApiError } from "./http";
-import { uid, getSchoolDocumentRow } from "./auth";
+import { uid } from "./auth";
+import { getUserBranchScope, hasBranchAccess, isAllScope } from "./scope";
 import { DOCS_DIR, MAX_UPLOAD_BYTES, validateUpload } from "./uploads";
 import type { SafeUser } from "@/lib/auth/types";
-import type { ClassSection, Student } from "@/lib/types";
 
 export type DocVisibility = "admin_only" | "staff" | "teachers" | "one_class" | "linked_student";
 export type DocCategory = "إداري" | "طالب" | "تعليمي" | "أخرى";
@@ -26,6 +26,7 @@ export type StoredDocument = {
   visibility: DocVisibility;
   classId?: string;
   studentId?: string;
+  branchId?: string;
   filename: string;
   storedName: string;
   sizeBytes: number;
@@ -45,6 +46,7 @@ export type DocumentRow = {
   className?: string;
   studentId?: string;
   studentName?: string;
+  branchId?: string;
   filename: string;
   sizeBytes: number;
   mime: string;
@@ -62,6 +64,7 @@ function toStored(row: DbRow): StoredDocument {
     visibility: String(row.visibility) as DocVisibility,
     classId: row.class_id ? String(row.class_id) : undefined,
     studentId: row.student_id ? String(row.student_id) : undefined,
+    branchId: row.branch_id ? String(row.branch_id) : undefined,
     filename: String(row.filename),
     storedName: String(row.stored_name),
     sizeBytes: Number(row.size_bytes ?? 0),
@@ -83,32 +86,76 @@ export type UploadInput = {
   visibility?: unknown;
   classId?: unknown;
   studentId?: unknown;
+  branchId?: unknown;
   filename: string;
   mime: string;
   byteLength: number;
   bytes: Buffer;
 };
 
-/** Class ids assigned to a teacher account. */
+/** Class ids assigned to a teacher account (head-teacher classes + teaching assignments). */
 async function teacherClassIds(user: SafeUser): Promise<Set<string>> {
-  const row = await getSchoolDocumentRow();
-  const ids = new Set<string>();
-  if (!row) return ids;
-  const doc = row.document as { classes?: Array<ClassSection & { teacherStaffId?: string; active?: boolean }> };
-  for (const c of doc.classes ?? []) {
-    if (c.active !== false && c.teacherStaffId === user.id) ids.add(c.id);
-  }
-  return ids;
+  const db = await getDb();
+  const result = await db.query(
+    `SELECT c.id FROM classes c WHERE c.head_teacher_user_id = $1 AND c.active = true
+     UNION
+     SELECT ta.class_id FROM teaching_assignments ta WHERE ta.teacher_user_id = $1`,
+    [user.id],
+  );
+  return new Set(result.rows.map((r) => String(r.id)));
 }
 
 async function classMap(): Promise<Map<string, string>> {
-  const row = await getSchoolDocumentRow();
+  const db = await getDb();
   const map = new Map<string, string>();
-  if (!row) return map;
-  const doc = row.document as { classes?: ClassSection[]; students?: Student[] };
-  for (const c of doc.classes ?? []) map.set(c.id, c.nameAr);
-  for (const s of doc.students ?? []) map.set(`student:${s.id}`, s.nameAr);
+  const classes = await db.query("SELECT id, name_ar FROM classes");
+  for (const c of classes.rows) map.set(String(c.id), String(c.name_ar ?? ""));
+  const students = await db.query("SELECT id, name_ar FROM students");
+  for (const s of students.rows) map.set(`student:${String(s.id)}`, String(s.name_ar ?? ""));
   return map;
+}
+
+async function classExists(classId: string): Promise<boolean> {
+  const r = await (await getDb()).query("SELECT 1 FROM classes WHERE id = $1", [classId]);
+  return r.rows.length > 0;
+}
+
+async function studentExists(studentId: string): Promise<boolean> {
+  const r = await (await getDb()).query("SELECT 1 FROM students WHERE id = $1", [studentId]);
+  return r.rows.length > 0;
+}
+
+/**
+ * Resolves the branch a document belongs to. Preference order:
+ * explicit branchId → the class's branch → the student's branch. Falls back to
+ * null (legacy/global documents keep a null branch for backward compat).
+ */
+async function resolveDocumentBranch(input: {
+  classId?: string;
+  studentId?: string;
+  branchId?: string;
+}): Promise<string | null> {
+  if (input.branchId) return input.branchId;
+  const db = await getDb();
+  if (input.classId) {
+    const result = await db.query("SELECT branch_id FROM classes WHERE id = $1 LIMIT 1", [input.classId]);
+    if (result.rows.length > 0) return String(result.rows[0].branch_id);
+  }
+  if (input.studentId) {
+    const result = await db.query("SELECT branch_id FROM students WHERE id = $1 LIMIT 1", [input.studentId]);
+    if (result.rows.length > 0) return String(result.rows[0].branch_id);
+  }
+  return null;
+}
+
+/** Throws unless the user may attach a document to the given branch. */
+async function requireBranchOrGlobal(user: SafeUser, branchId: string | null): Promise<void> {
+  const scope = await getUserBranchScope(user);
+  if (isAllScope(scope)) return;
+  if (branchId === null) return;
+  if (!hasBranchAccess(scope, branchId)) {
+    throw new ApiError("غير مصرح لك لرفع مستندات لهذا الفرع", 403);
+  }
 }
 
 function assertAllowedVisibility(v: unknown): asserts v is DocVisibility {
@@ -138,21 +185,16 @@ export async function createDocument(user: SafeUser, input: UploadInput): Promis
   let classId: string | null = null;
   let studentId: string | null = null;
 
-  const row = await getSchoolDocumentRow();
-  const doc = row?.document as
-    | { classes?: Array<{ id: string }>; students?: Array<{ id: string }> }
-    | undefined;
-
   if (user.role === "super_admin") {
     if (visibility === "one_class") {
       classId = cleanStr(input.classId);
       if (!classId) throw new ApiError("اختر الصف المستفيد من المستند");
-      if (!doc?.classes?.some((c) => c.id === classId)) throw new ApiError("الصف غير موجود");
+      if (!(await classExists(classId))) throw new ApiError("الصف غير موجود");
     }
     if (visibility === "linked_student") {
       studentId = cleanStr(input.studentId);
       if (!studentId) throw new ApiError("اختر الطالب المرتبط بالمستند");
-      if (!doc?.students?.some((s) => s.id === studentId)) throw new ApiError("الطالب غير موجود");
+      if (!(await studentExists(studentId))) throw new ApiError("الطالب غير موجود");
     }
   } else if (user.role === "staff") {
     const duties = new Set(user.duties);
@@ -165,7 +207,7 @@ export async function createDocument(user: SafeUser, input: UploadInput): Promis
       }
       classId = cleanStr(input.classId);
       if (!classId) throw new ApiError("اختر الصف المستفيد من الملف التعليمي");
-      if (!doc?.classes?.some((c) => c.id === classId)) throw new ApiError("الصف غير موجود");
+      if (!(await classExists(classId))) throw new ApiError("الصف غير موجود");
     } else if (duties.has("registrar")) {
       if (visibility !== "linked_student") {
         throw new ApiError("يمكن لأمين السجل رفع ملفات على سجل طالب محدد فقط", 403);
@@ -175,7 +217,7 @@ export async function createDocument(user: SafeUser, input: UploadInput): Promis
       }
       studentId = cleanStr(input.studentId);
       if (!studentId) throw new ApiError("اختر الطالب المرتبط بالملف");
-      if (!doc?.students?.some((s) => s.id === studentId)) throw new ApiError("الطالب غير موجود");
+      if (!(await studentExists(studentId))) throw new ApiError("الطالب غير موجود");
     } else {
       throw new ApiError("لا يمكن لموظف بلا اختصاص (دراسي/أمين سجل) رفع مستندات", 403);
     }
@@ -202,12 +244,21 @@ export async function createDocument(user: SafeUser, input: UploadInput): Promis
   }
   await writeFile(join(dir, storedName), input.bytes);
 
+  const resolvedBranchId = await resolveDocumentBranch({
+    classId: classId ?? undefined,
+    studentId: studentId ?? undefined,
+    branchId: cleanStr(input.branchId) || undefined,
+  });
+  if (user.role !== "super_admin") {
+    await requireBranchOrGlobal(user, resolvedBranchId);
+  }
+
   const now = new Date().toISOString();
   await (
     await getDb()
   ).query(
-    `INSERT INTO documents (id, title, category, visibility, class_id, student_id, filename, stored_name, size_bytes, mime, uploaded_by_user_id, uploaded_by_name, archived, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+    `INSERT INTO documents (id, title, category, visibility, class_id, student_id, branch_id, filename, stored_name, size_bytes, mime, uploaded_by_user_id, uploaded_by_name, archived, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
     [
       id,
       title,
@@ -215,6 +266,7 @@ export async function createDocument(user: SafeUser, input: UploadInput): Promis
       visibility,
       classId,
       studentId,
+      resolvedBranchId,
       input.filename,
       storedName,
       input.byteLength,
@@ -241,6 +293,10 @@ async function findDocument(id: string): Promise<StoredDocument | null> {
 export async function canSeeDocument(user: SafeUser, doc: StoredDocument): Promise<boolean> {
   if (user.role === "super_admin") return true;
   if (doc.archived) return false;
+  if (doc.branchId) {
+    const scope = await getUserBranchScope(user);
+    if (!isAllScope(scope) && !scope.includes(doc.branchId)) return false;
+  }
 
   switch (user.role) {
     case "staff":
@@ -260,11 +316,13 @@ export async function canSeeDocument(user: SafeUser, doc: StoredDocument): Promi
     case "student": {
       if (!user.studentId) return false;
       if (doc.visibility === "one_class" && doc.classId) {
-        const row = await getSchoolDocumentRow();
-        if (!row) return false;
-        const docRow = row.document as { students?: Student[] };
-        const student = docRow.students?.find((s) => s.id === user.studentId);
-        return student?.classId === doc.classId;
+        const enrolled = await (
+          await getDb()
+        ).query(
+          "SELECT 1 FROM student_class_enrollments WHERE student_id = $1 AND class_id = $2 AND status = 'enrolled' AND is_current = true LIMIT 1",
+          [user.studentId, doc.classId],
+        );
+        return enrolled.rows.length > 0;
       }
       if (doc.visibility === "linked_student") return doc.studentId === user.studentId;
       return false;
@@ -293,6 +351,7 @@ function enrichDocuments(list: StoredDocument[], user: SafeUser, names: Map<stri
     className: d.classId ? names.get(d.classId) : undefined,
     studentId: d.studentId,
     studentName: d.studentId ? names.get(`student:${d.studentId}`) : undefined,
+    branchId: d.branchId,
     filename: d.filename,
     sizeBytes: d.sizeBytes,
     mime: d.mime,
@@ -305,11 +364,12 @@ function enrichDocuments(list: StoredDocument[], user: SafeUser, names: Map<stri
 
 /**
  * Returns the documents visible to the account, with optional server-side
- * filtering to a single class or student (used by workspace panels).
+ * filtering to a single class, student or branch (used by workspace panels).
+ * Branch scope is enforced in canSeeDocument for every account.
  */
 export async function listDocumentsForUser(
   user: SafeUser,
-  opts?: { classId?: string; studentId?: string },
+  opts?: { classId?: string; studentId?: string; branchId?: string },
 ): Promise<DocumentRow[]> {
   const all = await listAllStored();
   const names = await classMap();
@@ -319,6 +379,7 @@ export async function listDocumentsForUser(
     if (opts?.classId && d.classId && d.classId !== opts.classId) continue;
     if (opts?.classId && !d.classId) continue;
     if (opts?.studentId && d.studentId && d.studentId !== opts.studentId) continue;
+    if (opts?.branchId && d.branchId && d.branchId !== opts.branchId) continue;
     visible.push(d);
   }
   return enrichDocuments(visible, user, names);

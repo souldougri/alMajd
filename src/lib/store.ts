@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import {
   createDefaultDocument,
   downloadBackupFile,
@@ -8,6 +7,7 @@ import {
   type SchoolDatabaseDocument,
 } from "@/lib/storage";
 import { CURRENT_SCHEMA_VERSION } from "@/lib/storage/types";
+import { isDesktop, pushChanges } from "@/lib/relational";
 import { getAppreciation } from "@/lib/constants";
 import type { AttendanceMap, AttendanceStatus, ClassSection, ExamSession, Expense, FeeType, Grade, Payment, Staff, Student, Subject, Term, TimetableEntry, Warning } from "@/lib/types";
 
@@ -87,8 +87,35 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Initial document resolution (auto-migrates from legacy "al-madjd-sis-v1" if present)
-const initialDoc = loadSchoolDocument();
+// Desktop keeps the legacy JSON document for temporary compatibility (it syncs
+// to a local file). The web build starts empty and is hydrated from the
+// relational APIs — the JSON store is never written on the web anymore.
+const DESKTOP_BUILD = isDesktop();
+
+const EMPTY_DOCUMENT: SchoolDatabaseDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  students: [],
+  classes: [],
+  subjects: [],
+  terms: [],
+  grades: [],
+  staff: [],
+  payments: [],
+  warnings: [],
+  attendance: {},
+  feeTypes: [],
+  expenses: [],
+  examSessions: [],
+  timetable: [],
+  publishedResults: {},
+  system: {
+    name: "مجمع المجد التعليمي العربي",
+    academicYear: "2026–2027",
+    version: "1.0.0",
+  },
+};
+
+const initialDoc = DESKTOP_BUILD ? loadSchoolDocument() : EMPTY_DOCUMENT;
 
 function syncToStorage(state: {
   students: Student[];
@@ -107,33 +134,39 @@ function syncToStorage(state: {
   publishedResults?: Record<string, boolean>;
   schoolYear?: string;
 }) {
-  saveSchoolDocument({
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    students: state.students,
-    classes: state.classes,
-    subjects: state.subjects,
-    terms: state.terms,
-    grades: state.grades,
-    staff: state.staff,
-    payments: state.payments,
-    warnings: state.warnings,
-    attendance: state.attendance,
-    feeTypes: state.feeTypes ?? [],
-    expenses: state.expenses ?? [],
-    examSessions: state.examSessions ?? [],
-    timetable: state.timetable ?? [],
-    publishedResults: state.publishedResults ?? {},
-    system: {
-      name: "مجمع المجد التعليمي العربي",
-      academicYear: state.schoolYear ?? "2026–2027",
-      version: "1.0.0",
-    },
-  });
+  if (DESKTOP_BUILD) {
+    saveSchoolDocument({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      students: state.students,
+      classes: state.classes,
+      subjects: state.subjects,
+      terms: state.terms,
+      grades: state.grades,
+      staff: state.staff,
+      payments: state.payments,
+      warnings: state.warnings,
+      attendance: state.attendance,
+      feeTypes: state.feeTypes ?? [],
+      expenses: state.expenses ?? [],
+      examSessions: state.examSessions ?? [],
+      timetable: state.timetable ?? [],
+      publishedResults: state.publishedResults ?? {},
+      system: {
+        name: "مجمع المجد التعليمي العربي",
+        academicYear: state.schoolYear ?? "2026–2027",
+        version: "1.0.0",
+      },
+    });
+    return;
+  }
+  // Web: relay the transition to the relational persistence adapter.
+  // Inside a set() updater, getState() is the pre-mutation snapshot, which is
+  // exactly the "prev" frame pushChanges diffs against `state`.
+  pushChanges(useSchool.getState(), state);
 }
 
 export const useSchool = create<SchoolState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       view: "home",
       students: initialDoc.students,
       classes: initialDoc.classes,
@@ -256,7 +289,7 @@ export const useSchool = create<SchoolState>()(
       upsertGrade: (g) =>
         set((st) => {
           const existingIndex = st.grades.findIndex(
-            (grade) => grade.studentId === g.studentId && grade.subjectId === g.subjectId && grade.termId === g.termId
+            (grade) => grade.studentId === g.studentId && grade.subjectId === g.subjectId && grade.termId === g.termId,
           );
           let nextGrades;
           if (existingIndex >= 0) {
@@ -536,6 +569,4 @@ export const useSchool = create<SchoolState>()(
         });
       },
     }),
-    { name: "al-madjd-sis-v1" },
-  ),
 );

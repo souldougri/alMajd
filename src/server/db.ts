@@ -12,6 +12,8 @@ import { join } from "node:path";
 import { Pool } from "pg";
 import { PGlite } from "@electric-sql/pglite";
 import { hashPassword, uid } from "./auth";
+import { SCHEMA_SQL, SEED_LOOKUPS_SQL } from "./schema";
+import { SCHOOL } from "@/lib/school";
 import { FIXTURE_STAFF_IDS, FIXTURE_STUDENT_IDS } from "@/data/seed";
 
 export interface DbRow {
@@ -52,128 +54,6 @@ async function makePglite(): Promise<DbLike> {
   };
 }
 
-const SCHEMA_SQL = `
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  email TEXT NOT NULL UNIQUE,
-  name_ar TEXT NOT NULL,
-  name_en TEXT NOT NULL DEFAULT '',
-  role TEXT NOT NULL DEFAULT 'staff',
-  password_hash TEXT NOT NULL,
-  active BOOLEAN NOT NULL DEFAULT true,
-  staff_id TEXT,
-  student_id TEXT,
-  duties TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS sessions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token_hash TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL,
-  expires_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id TEXT PRIMARY KEY,
-  action TEXT NOT NULL,
-  actor_id TEXT,
-  actor_name TEXT,
-  target_id TEXT,
-  target_name TEXT,
-  detail TEXT,
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS contact_messages (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  phone TEXT,
-  subject TEXT NOT NULL,
-  message TEXT NOT NULL,
-  read BOOLEAN NOT NULL DEFAULT false,
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS school_documents (
-  id TEXT PRIMARY KEY,
-  schema_version INTEGER NOT NULL,
-  document TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS site_news (
-  id TEXT PRIMARY KEY,
-  title_ar TEXT NOT NULL,
-  title_fr TEXT NOT NULL DEFAULT '',
-  title_en TEXT NOT NULL DEFAULT '',
-  body TEXT NOT NULL,
-  cover TEXT NOT NULL DEFAULT '',
-  news_date TEXT NOT NULL,
-  published BOOLEAN NOT NULL DEFAULT true,
-  updated_by TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS notifications (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  body TEXT NOT NULL DEFAULT '',
-  type TEXT NOT NULL DEFAULT 'general',
-  target TEXT NOT NULL,
-  user_id TEXT,
-  class_id TEXT,
-  created_by_user_id TEXT NOT NULL,
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS notification_reads (
-  notification_id TEXT NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
-  user_id TEXT NOT NULL,
-  read_at TEXT NOT NULL,
-  PRIMARY KEY (notification_id, user_id)
-);
-
-CREATE TABLE IF NOT EXISTS documents (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  category TEXT NOT NULL,
-  visibility TEXT NOT NULL,
-  class_id TEXT,
-  student_id TEXT,
-  filename TEXT NOT NULL,
-  stored_name TEXT NOT NULL,
-  size_bytes INTEGER NOT NULL,
-  mime TEXT NOT NULL,
-  uploaded_by_user_id TEXT NOT NULL,
-  uploaded_by_name TEXT NOT NULL DEFAULT '',
-  archived BOOLEAN NOT NULL DEFAULT false,
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS site_settings (
-  id TEXT PRIMARY KEY,
-  settings TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
-CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
-CREATE INDEX IF NOT EXISTS idx_news_date ON site_news(news_date);
-CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
-CREATE INDEX IF NOT EXISTS idx_documents_created ON documents(created_at);
-
--- Idempotent migrations for existing databases created before these columns existed.
-ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_id TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS student_id TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS duties TEXT NOT NULL DEFAULT '';
-`;
-
 async function seedAdminIfMissing(connection: DbLike): Promise<void> {
   const existing = await connection.query("SELECT id FROM users WHERE email = $1", [SEED_ADMIN_EMAIL.toLowerCase()]);
   if (existing.rows.length > 0) return;
@@ -194,6 +74,32 @@ async function seedAdminIfMissing(connection: DbLike): Promise<void> {
     ],
   );
   console.info(`[db] Seeded default admin account ${SEED_ADMIN_EMAIL}.`);
+}
+
+/**
+ * Seeds the baseline organization state on a clean database:
+ * - one default branch (keeps the single-branch UI functional until the
+ *   dedicated branch-management UI lands), and
+ * - the current academic year.
+ * Idempotent — safe to run on every startup.
+ */
+async function seedBaselineOrg(connection: DbLike): Promise<void> {
+  const now = new Date().toISOString();
+  const branches = await connection.query("SELECT id FROM branches WHERE is_default = true LIMIT 1");
+  if (branches.rows.length === 0) {
+    await connection.query(
+      `INSERT INTO branches (id, name_ar, name_fr, name_en, address, phone, active, is_default, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)`,
+      [uid("br"), "الفرع الرئيسي", "Branche principale", "Main Branch", "", "", true, true, now],
+    );
+    console.info("[db] Seeded default branch.");
+  }
+  await connection.query(
+    `INSERT INTO academic_years (id, label, start_date, end_date, is_current, active, created_at)
+     VALUES ($1, $2, NULL, NULL, true, true, $3)
+     ON CONFLICT (label) DO NOTHING`,
+    [uid("ay"), SCHOOL.year, now],
+  );
 }
 
 /**
@@ -254,7 +160,9 @@ async function stripFixtureRowsFromSchoolDocument(connection: DbLike): Promise<v
 async function init(): Promise<void> {
   const connection = db ?? (await connect());
   await connection.exec(SCHEMA_SQL);
+  await connection.exec(SEED_LOOKUPS_SQL);
   await seedAdminIfMissing(connection);
+  await seedBaselineOrg(connection);
   await stripFixtureRowsFromSchoolDocument(connection);
 }
 

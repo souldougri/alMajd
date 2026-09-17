@@ -68,9 +68,20 @@ export function StudentShell() {
 
   const student = portfolio?.student ?? null;
   const subjects = useMemo(() => {
-    if (!portfolio || !student) return [] as Subject[];
-    return classSubjects(portfolio.subjects, student.classId);
-  }, [portfolio, student]);
+    if (!portfolio) return [] as Subject[];
+    // In the relational portfolio, subjects are already filtered to the student's class
+    // and don't have a classId property. They just need to be mapped to the Subject type.
+    return portfolio.subjects.map((s) => ({
+      id: s.id,
+      code: s.code,
+      nameAr: s.nameAr,
+      nameFr: s.nameFr,
+      coefficient: s.coefficient,
+      maxScore: s.maxScore,
+      active: s.active,
+      classId: portfolio.student?.classId, // Add classId for compatibility with existing code
+    })) as Subject[];
+  }, [portfolio]);
 
   const termGrades = useMemo(() => {
     if (!portfolio) return [] as Grade[];

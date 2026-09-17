@@ -9,7 +9,7 @@
 import { getDb } from "./db";
 import { ApiError } from "./http";
 import { uid } from "./auth";
-import { getSchoolDocumentRow } from "./auth";
+import { getUserBranchScope, isAllScope } from "./scope";
 import type { SafeUser } from "@/lib/auth/types";
 
 export type NotificationTarget =
@@ -40,6 +40,7 @@ export type NotificationComposeInput = {
   target?: unknown;
   userId?: unknown;
   classId?: unknown;
+  branchIds?: unknown;
 };
 
 export type NotificationRow = {
@@ -115,6 +116,9 @@ export async function composeNotification(
   const type = isType(input.type) ? input.type : "general";
   const now = new Date().toISOString();
   const id = uid("not");
+
+  const branchIds = await resolveBranchIds(input.branchIds, actor);
+
   await (
     await getDb()
   ).query(
@@ -122,6 +126,15 @@ export async function composeNotification(
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [id, title, cleanStr(input.body), type, target, userId, classId, actor.id, now],
   );
+
+  if (target === "all_staff" || target === "all_teachers" || target === "all_students") {
+    for (const bid of branchIds) {
+      await (await getDb()).query(
+        "INSERT INTO notification_branches (notification_id, branch_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [id, bid],
+      );
+    }
+  }
 
   const sent = await findNotification(id);
   return {
@@ -135,6 +148,33 @@ export async function composeNotification(
     createdByName: actor.nameAr,
     createdAt: sent.createdAt,
   };
+}
+
+/**
+ * Validates branch scoping for broadcast targets: non-super-admins may only
+ * target branches inside their own scope. Returns the resolved branch list
+ * (empty means all branches).
+ */
+export async function resolveBranchIds(branchIds: unknown, actor: SafeUser): Promise<string[]> {
+  if (branchIds === undefined || branchIds === null) return [];
+  const requested = Array.isArray(branchIds)
+    ? branchIds.filter((b): b is string => typeof b === "string" && b.length > 0)
+    : typeof branchIds === "string" && branchIds
+      ? [branchIds]
+      : [];
+  if (requested.length === 0) return [];
+  const extra = requested.filter((id) => id.startsWith("branch:"));
+  const norm = requested.filter((id) => !id.startsWith("branch:"));
+  const all = [...norm, ...extra.map((id) => id.slice("branch:".length))];
+  const scope = await getUserBranchScope(actor);
+  if (!isAllScope(scope)) {
+    const allowed = new Set(scope);
+    const denied = all.filter((id) => !allowed.has(id));
+    if (denied.length > 0) {
+      throw new ApiError("لا يمكنك إرسال إشعارات لفرع خارج صلاحياتك", 403);
+    }
+  }
+  return [...new Set(all)];
 }
 
 async function findNotification(id: string): Promise<NotificationRow> {
@@ -162,25 +202,45 @@ async function findNotification(id: string): Promise<NotificationRow> {
 /** Class ids relevant to a user (teacher → assigned classes, student → own class). */
 async function userClassIds(user: SafeUser): Promise<Set<string>> {
   const ids = new Set<string>();
+  const db = await getDb();
   if (user.role === "student" && user.studentId) {
-    const row = await getSchoolDocumentRow();
-    if (row) {
-      const doc = row.document as { students?: Array<{ id: string; classId?: string }> };
-      const student = doc.students?.find((s) => s.id === user.studentId);
-      if (student?.classId) ids.add(student.classId);
-    }
+    const enrolled = await db.query(
+      "SELECT class_id FROM student_class_enrollments WHERE student_id = $1 AND status = 'enrolled' AND is_current = true",
+      [user.studentId],
+    );
+    for (const r of enrolled.rows) ids.add(String(r.class_id));
     return ids;
   }
   if (user.role === "teacher") {
-    const row = await getSchoolDocumentRow();
-    if (row) {
-      const doc = row.document as { classes?: Array<{ id: string; teacherStaffId?: string; active?: boolean }> };
-      for (const c of doc.classes ?? []) {
-        if (c.active !== false && c.teacherStaffId === user.id) ids.add(c.id);
-      }
-    }
+    const classes = await db.query(
+      `SELECT c.id FROM classes c WHERE c.head_teacher_user_id = $1 AND c.active = true
+       UNION
+       SELECT ta.class_id FROM teaching_assignments ta WHERE ta.teacher_user_id = $1`,
+      [user.id],
+    );
+    for (const r of classes.rows) ids.add(String(r.id));
   }
   return ids;
+}
+
+/** Branch ids a broadcast notification is restricted to ([] = all branches). */
+async function notificationBranchIds(notificationId: string): Promise<string[]> {
+  const result = await (
+    await getDb()
+  ).query("SELECT branch_id FROM notification_branches WHERE notification_id = $1", [notificationId]);
+  return result.rows.map((r) => String(r.branch_id));
+}
+
+/**
+ * Whether an account shares at least one branch with a broadcast. True when
+ * there is no restriction ([]) or the scopes intersect.
+ */
+async function branchTouchesUser(branchIds: string[], user: SafeUser): Promise<boolean> {
+  if (branchIds.length === 0) return true;
+  const userScope = await getUserBranchScope(user);
+  if (isAllScope(userScope)) return true;
+  const userBranches = new Set(userScope);
+  return branchIds.some((bid) => userBranches.has(bid));
 }
 
 /** Whether an alert applies to the given account. */
@@ -241,6 +301,10 @@ export async function listNotificationsForUser(user: SafeUser): Promise<{
   const visible: NotificationRow[] = [];
   for (const { not } of rows) {
     if (await notificationAppliesTo(not, user)) {
+      if (not.target === "all_staff" || not.target === "all_teachers" || not.target === "all_students") {
+        const branchIds = await notificationBranchIds(not.id);
+        if (!(await branchTouchesUser(branchIds, user))) continue;
+      }
       visible.push(not);
     }
   }

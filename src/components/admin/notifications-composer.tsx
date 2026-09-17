@@ -3,8 +3,8 @@ import { Loader2, Send } from "lucide-react";
 import { composeNotification, fetchComposedNotifications, type ComposedNotification, type NotificationTarget, type NotificationType } from "@/lib/notifications";
 import { getUsers } from "@/lib/auth/users";
 import type { SafeUser } from "@/lib/auth/types";
-import { useSchool } from "@/lib/store";
 import { formatPrintDate } from "@/lib/print";
+import { api } from "@/lib/api";
 
 const TARGET_LABELS: Record<NotificationTarget, string> = {
   all_students: "كل الطلاب",
@@ -38,7 +38,7 @@ const TEACHER_TARGETS: NotificationTarget[] = ["one_teacher"];
 const STUDENT_TARGETS: NotificationTarget[] = ["one_student"];
 
 export function NotificationsComposer() {
-  const classes = useSchool((s) => s.classes);
+  const [classes, setClasses] = useState<Array<{ id: string; nameAr: string; active: boolean }>>([]);
   const [users, setUsers] = useState<SafeUser[]>([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -57,6 +57,12 @@ export function NotificationsComposer() {
       .then(setUsers)
       .catch(() => setUsers([]));
     fetchComposedNotifications().then((result) => setHistory(result.items));
+    api
+      .get<{ items: Array<{ id: string; nameAr: string; active: boolean }> }>("/api/academic/classes")
+      .then((res) => {
+        if (res.ok) setClasses(res.data?.items ?? []);
+      })
+      .catch(() => setClasses([]));
   }, []);
 
   const staffUsers = useMemo(() => users.filter((u) => u.role === "staff" || u.role === "super_admin"), [users]);

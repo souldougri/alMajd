@@ -3,8 +3,27 @@ import { Bell, X } from "lucide-react";
 import { fetchNotifications, markRead, type NotificationRow } from "@/lib/notifications";
 import { formatPrintDate } from "@/lib/print";
 
+const EDGE = 8;
+const MAX_WIDTH = 352;
+
+type PanelPos = { top: number; right: number } | null;
+
+function computePanelPos(): PanelPos {
+  const el = document.querySelector<HTMLElement>("[data-notification-bell-trigger]");
+  const rect = el?.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth;
+  const width = Math.min(MAX_WIDTH, vw - EDGE * 2);
+  // Anchor the panel to the end edge of the trigger, then clamp so it always
+  // stays fully inside the viewport (small phones, Capacitor WebView, RTL).
+  const alignEnd = rect ? vw - rect.right : vw - EDGE - width;
+  const right = Math.min(Math.max(alignEnd, EDGE), Math.max(EDGE, vw - width - EDGE));
+  const top = (rect?.bottom ?? EDGE) + EDGE;
+  return { top, right };
+}
+
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<PanelPos>(null);
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -49,6 +68,22 @@ export function NotificationBell() {
     };
   }, [open]);
 
+  // Reposition while open: viewport resizes, orientation changes, or the
+  // drawer/header layout shifts (small phones + Capacitor WebView).
+  useEffect(() => {
+    if (!open) return;
+    function onResize() {
+      setPos(computePanelPos());
+    }
+    setPos(computePanelPos());
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, [open]);
+
   async function openDropdown() {
     const willOpen = !open;
     setOpen(willOpen);
@@ -59,12 +94,17 @@ export function NotificationBell() {
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
+  const maxHeight = pos ? `calc(100dvh - ${pos.top}px - ${EDGE}px)` : `min(24rem, 60dvh)`;
+
   return (
     <div className="relative" ref={rootRef}>
       <button
         type="button"
+        data-notification-bell-trigger
         onClick={openDropdown}
         aria-label="الإشعارات"
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="relative flex size-11 items-center justify-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
       >
         <Bell className="size-5" />
@@ -75,8 +115,13 @@ export function NotificationBell() {
         ) : null}
       </button>
 
-      {open ? (
-        <div className="absolute end-0 top-12 z-50 flex max-h-[min(24rem,60dvh)] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-xl">
+      {open && pos ? (
+        <div
+          role="dialog"
+          aria-label="الإشعارات"
+          style={{ top: pos.top, right: pos.right, maxHeight, width: Math.min(MAX_WIDTH, document.documentElement.clientWidth - EDGE * 2) }}
+          className="fixed z-[90] flex flex-col overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-xl"
+        >
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-navy/10 bg-cream px-4 py-3">
             <div className="min-w-0">
               <p className="font-bold text-navy">الإشعارات</p>
@@ -91,7 +136,7 @@ export function NotificationBell() {
               <X className="size-4" />
             </button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
             {loading ? (
               <p className="py-8 text-center text-sm text-navy/50">جارٍ التحميل...</p>
             ) : error ? (

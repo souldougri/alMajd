@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { requireTeacherFromRequest } from "@/server/auth";
-import { getTeacherPortfolio, upsertTeacherGrade } from "@/server/school";
+import { getTeacherPortfolioRelational, upsertTeacherGradeRelational } from "@/server/teacher-portal";
 import { handle, jsonOk } from "@/server/http";
 
 type UpsertGradeBody = {
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/teacher")({
       GET: async ({ request }) => {
         try {
           const user = await requireTeacherFromRequest(request);
-          return jsonOk({ portfolio: await getTeacherPortfolio(user) });
+          return jsonOk({ portfolio: await getTeacherPortfolioRelational(user) });
         } catch (err) {
           return handle(err);
         }
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/api/teacher")({
         try {
           const user = await requireTeacherFromRequest(request);
           const body = (await request.json()) as UpsertGradeBody;
-          const result = await upsertTeacherGrade(user, body);
+          const result = await upsertTeacherGradeRelational(user, body);
           return jsonOk(result);
         } catch (err) {
           return handle(err);

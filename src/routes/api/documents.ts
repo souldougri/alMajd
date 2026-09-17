@@ -12,7 +12,8 @@ export const Route = createFileRoute("/api/documents")({
           const url = new URL(request.url);
           const classId = url.searchParams.get("classId") ?? undefined;
           const studentId = url.searchParams.get("studentId") ?? undefined;
-          const items = await listDocumentsForUser(user, { classId, studentId });
+          const branchId = url.searchParams.get("branchId") ?? undefined;
+          const items = await listDocumentsForUser(user, { classId, studentId, branchId });
           return jsonOk({ items });
         } catch (err) {
           return handle(err);
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/api/documents")({
             visibility: form.get("visibility"),
             classId: form.get("classId"),
             studentId: form.get("studentId"),
+            branchId: form.get("branchId"),
             filename: file.name,
             mime: file.type || "application/octet-stream",
             byteLength: file.size,

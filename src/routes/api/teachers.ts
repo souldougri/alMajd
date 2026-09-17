@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireDeskFromRequest, listUsersSafe } from "@/server/auth";
+import { requireDeskFromRequest } from "@/server/auth";
+import { listTeachers } from "@/server/teachers";
 import { handle, jsonOk } from "@/server/http";
 
 export const Route = createFileRoute("/api/teachers")({
@@ -7,10 +8,10 @@ export const Route = createFileRoute("/api/teachers")({
     handlers: {
       GET: async ({ request }) => {
         try {
-          await requireDeskFromRequest(request);
-          const allUsers = await listUsersSafe();
-          // Filter to only active teacher role users
-          const teachers = allUsers.filter((u) => u.role === "teacher" && u.active);
+          const user = await requireDeskFromRequest(request);
+          const url = new URL(request.url);
+          const branchId = url.searchParams.get("branchId") ?? undefined;
+          const teachers = await listTeachers(user, { branchId });
           return jsonOk({ teachers });
         } catch (err) {
           return handle(err);

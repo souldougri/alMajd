@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   listAuditLogs,
-  requireAdminFromRequest,
   requireUserFromRequest,
   writeAudit,
 } from "@/server/auth";
+import { getUserBranchScope, isAllScope } from "@/server/scope";
 import { handle, jsonError, jsonOk } from "@/server/http";
 import type {
   AuditAction,
@@ -31,6 +31,30 @@ const CLIENT_ACTIONS = new Set<AuditAction>([
   "bulletin.publish",
 ]);
 
+/** Scoped variant: audit rows restricted to the given set of branch ids. */
+async function listAuditLogsForScope(scope: string[], limit = 200): Promise<Array<Record<string, unknown>>> {
+  const db = await (await import("@/server/db")).getDb();
+  const result = await db.query(
+    `SELECT id, action, actor_id, actor_name, target_id, target_name, branch_id, entity_type, detail, created_at
+     FROM audit_logs
+     WHERE branch_id IS NULL OR branch_id = ANY($1::text[])
+     ORDER BY created_at DESC, id DESC LIMIT $2`,
+    [scope, Math.min(Math.max(limit, 1), 500)],
+  );
+  return result.rows.map((row) => ({
+    id: String(row.id ?? ""),
+    action: String(row.action),
+    actorId: String(row.actor_id ?? ""),
+    actorName: String(row.actor_name ?? ""),
+    targetId: String(row.target_id ?? ""),
+    targetName: String(row.target_name ?? ""),
+    branchId: row.branch_id ? String(row.branch_id) : undefined,
+    entityType: String(row.entity_type ?? ""),
+    detail: String(row.detail ?? ""),
+    createdAt: String(row.created_at),
+  }));
+}
+
 export const Route = createFileRoute("/api/audit")({
   validateSearch: (search: Record<string, unknown>) => ({
     limit: typeof search.limit === "string" ? Number(search.limit) : undefined,
@@ -39,8 +63,18 @@ export const Route = createFileRoute("/api/audit")({
     handlers: {
       GET: async ({ request }) => {
         try {
-          await requireAdminFromRequest(request);
-          return jsonOk({ logs: await listAuditLogs() });
+          const user = await requireUserFromRequest(request);
+          const url = new URL(request.url);
+          const branchId = url.searchParams.get("branchId") ?? undefined;
+          const scope = await getUserBranchScope(user);
+          if (!isAllScope(scope) && branchId && !scope.includes(branchId)) {
+            return jsonError("غير مصرح لك للوصول إلى سجل هذا الفرع", 403);
+          }
+          if (!isAllScope(scope) && !branchId && scope.length > 0) {
+            const logs = await listAuditLogsForScope(scope);
+            return jsonOk({ logs });
+          }
+          return jsonOk({ logs: await listAuditLogs(200, branchId) });
         } catch (err) {
           return handle(err);
         }

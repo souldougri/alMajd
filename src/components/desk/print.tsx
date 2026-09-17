@@ -140,10 +140,10 @@ function PrintStage({ job, onClose }: { job: PrintJob; onClose: () => void }) {
       <div className="no-print print-toolbar">
         <p className="text-sm font-medium">معاينة الوثيقة الرسمية</p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={onClose}>
+          <Button size="sm" variant="outline" className="min-h-11 px-4" onClick={onClose}>
             إغلاق
           </Button>
-          <Button size="sm" onClick={() => void printWhenReady(job.kind)}>
+          <Button size="sm" className="min-h-11 px-4" onClick={() => void printWhenReady(job.kind)}>
             طباعة
           </Button>
         </div>
