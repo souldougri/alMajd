@@ -7,9 +7,9 @@
  * Server-only module — never import from client code.
  */
 import { getDb, type DbRow } from "./db";
-import { uid, writeAudit, deactivateStudentUserServer, upsertStudentUserServer } from "./auth";
+import { uid, writeAudit, deactivateStudentUserServer, upsertStudentUserServer, upsertParentUserServer, resolveParentStudentId, type StudentLoginResult, type ParentLoginResult } from "./auth";
 import { ApiError } from "./http";
-import { getUserBranchScope, requireBranchAccess, requireBranchId } from "./scope";
+import { getUserBranchScope, requireBranchAccess, requireBranchHeadOrAdmin, requireBranchId } from "./scope";
 import type { SafeUser } from "@/lib/auth/types";
 
 export type StudentRow = {
@@ -61,12 +61,21 @@ export type StudentEnrollmentRow = {
 };
 
 export type CreateStudentInput = {
-  /** Optional client-supplied id (kept authoritative so sync references stay intact). */
+  /**
+   * Optional client-supplied id (kept authoritative so sync references stay
+   * intact). Also serves as the registration idempotency key: retries with
+   * the same id return the existing record instead of duplicating it.
+   */
   id?: string;
   nameAr: string;
   nameFr?: string;
   gender?: string;
   klass?: string;
+  /**
+   * Optional class reference (preferred over the free-text klass label).
+   * The class must exist and belong to the student's branch — enforced below.
+   */
+  classId?: string;
   dob?: string;
   placeOfBirth?: string;
   parentAr?: string;
@@ -87,6 +96,8 @@ export type UpdateStudentInput = {
   nameFr?: string;
   gender?: string;
   klass?: string;
+  /** Same branch-checked class reference as in CreateStudentInput. */
+  classId?: string;
   dob?: string;
   placeOfBirth?: string;
   parentAr?: string;
@@ -214,6 +225,11 @@ export async function getStudent(
   if (!row) throw new ApiError("الطالب غير موجود", 404);
   const student = toStudent(row);
   await requireBranchAccess(user, student.branchId);
+  // A student account may read only its own record — branch scope alone
+  // would otherwise expose classmates' full records (parent, phone, ...).
+  if (user.role === "student" && user.studentId !== studentId) {
+    throw new ApiError("غير مصرح لك بالاطلاع على سجل طالب آخر", 403);
+  }
   const historyRes = await db.query(
     `SELECT h.id, h.student_id, h.branch_id, b.name_ar AS branch_name_ar, h.effective_date, h.reason, h.is_current, h.moved_by_user_id
      FROM student_branch_history h
@@ -237,14 +253,56 @@ export async function getStudent(
   };
 }
 
+/**
+ * Account status for a student (login emails only — passwords are never
+ * stored nor re-exposed). Reuses getStudent, so branch scope and the
+ * student self-only rule apply unchanged.
+ */
+export async function getStudentLoginStatus(
+  studentId: string,
+  user: SafeUser,
+): Promise<{ student: { email: string } | null; parent: { email: string } | null }> {
+  await getStudent(studentId, user);
+  const db = await getDb();
+  const s = await db.query("SELECT email FROM users WHERE student_id = $1 AND role = 'student' LIMIT 1", [studentId]);
+  const p = await db.query("SELECT email FROM users WHERE parent_student_id = $1 AND role = 'parent' LIMIT 1", [studentId]);
+  return {
+    student: s.rows.length > 0 ? { email: String(s.rows[0].email) } : null,
+    parent: p.rows.length > 0 ? { email: String(p.rows[0].email) } : null,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Register / update
 // ---------------------------------------------------------------------------
 
 /**
  * Registers a student in a branch. Creates the initial branch-history row and
- * (optionally) a bound portal login via the existing registrar infrastructure.
+ * always provisions the bound portal login via the existing registrar
+ * infrastructure (auto-generated id/password unless explicit values given).
  */
+/**
+ * Resolves an explicit class reference for enrollment: the class must exist
+ * and belong to the student's branch (server-side anti-escape check — a
+ * forged classId from another branch is rejected, never trusted).
+ * Returns the class's canonical label, or null when no classId was given
+ * (legacy free-text klass path stays untouched).
+ */
+async function resolveEnrollmentClass(
+  db: Awaited<ReturnType<typeof getDb>>,
+  classId: string | undefined,
+  branchId: string,
+): Promise<{ id: string; klassLabel: string } | null> {
+  const cid = classId?.trim() || "";
+  if (!cid) return null;
+  const cls = await db.query("SELECT id, name_ar, branch_id FROM classes WHERE id = $1 LIMIT 1", [cid]);
+  if (cls.rows.length === 0) throw new ApiError("الفصل غير موجود", 404);
+  if (String(cls.rows[0].branch_id) !== branchId) {
+    throw new ApiError("الفصل لا ينتمي إلى فرع الطالب", 403);
+  }
+  return { id: String(cls.rows[0].id), klassLabel: String(cls.rows[0].name_ar) };
+}
+
 /**
  * Keeps the class enrollment consistent with the student's `klass` label so the
  * store-driven flows can grade/attendance-mark relationally. Idempotent: no-op
@@ -256,7 +314,23 @@ async function ensureEnrollmentForKlass(
   branchId: string,
   klass: string | undefined,
   actor: SafeUser,
+  explicitClassId?: string,
 ): Promise<void> {
+  // Exact class reference wins over label matching (avoids same-name classes
+  // across academic years resolving to the wrong row).
+  if (explicitClassId?.trim()) {
+    const exact = await db.query(
+      `SELECT c.id, c.academic_year_id
+         FROM classes c
+        WHERE c.id = $1 AND c.branch_id = $2 AND c.active = true
+        LIMIT 1`,
+      [explicitClassId.trim(), branchId],
+    );
+    if (exact.rows.length > 0) {
+      await applyEnrollment(db, studentId, String(exact.rows[0].id), String(exact.rows[0].academic_year_id), actor);
+      return;
+    }
+  }
   const name = (klass ?? "").trim();
   if (!name) return;
   const cls = await db.query(
@@ -269,9 +343,16 @@ async function ensureEnrollmentForKlass(
     [branchId, name],
   );
   if (cls.rows.length === 0) return;
-  const classId = String(cls.rows[0].id);
-  const yearId = String(cls.rows[0].academic_year_id);
+  await applyEnrollment(db, studentId, String(cls.rows[0].id), String(cls.rows[0].academic_year_id), actor);
+}
 
+async function applyEnrollment(
+  db: Awaited<ReturnType<typeof getDb>>,
+  studentId: string,
+  classId: string,
+  yearId: string,
+  actor: SafeUser,
+): Promise<void> {
   const current = await db.query(
     "SELECT id, class_id FROM student_class_enrollments WHERE student_id = $1 AND is_current = true",
     [studentId],
@@ -295,18 +376,59 @@ async function ensureEnrollmentForKlass(
   );
 }
 
-export async function registerStudent(input: CreateStudentInput, actor: SafeUser): Promise<StudentRow> {
+/**
+ * Student record writes (register/edit/remove) require super_admin, registrar
+ * duty, or the acting Branch Head of the student's branch — mere branch
+ * membership (e.g. an assigned teacher) is not enough.
+ */
+async function requireStudentWriteAuthority(actor: SafeUser, branchId: string): Promise<void> {
+  await requireBranchAccess(actor, branchId);
+  if (actor.role !== "super_admin" && !actor.duties.includes("registrar")) {
+    await requireBranchHeadOrAdmin(actor, branchId);
+  }
+}
+
+export async function registerStudent(
+  input: CreateStudentInput,
+  actor: SafeUser,
+): Promise<{ student: StudentRow; login: { student: StudentLoginResult; parent: ParentLoginResult } }> {
   const nameAr = input.nameAr.trim();
   if (!nameAr) throw new ApiError("يرجى إدخال اسم الطالب");
   const bid = requireBranchId(input.branchId);
-  await requireBranchAccess(actor, bid);
+  await requireStudentWriteAuthority(actor, bid);
   const db = await getDb();
   const branch = await db.query("SELECT id, name_ar FROM branches WHERE id = $1", [bid]);
   if (branch.rows.length === 0) throw new ApiError("الفرع غير موجود", 404);
 
   const now = new Date().toISOString();
   const id = input.id?.trim() || uid("stu");
+  // Idempotency: a client-supplied id doubles as the idempotency key for the
+  // whole registration (record + login). A retry with the same key — double
+  // submit, timeout retry, re-synced op — returns the already-registered
+  // record instead of creating a duplicate. The branch guard below keeps a
+  // key from one branch from ever resolving a record of another branch (such
+  // a call falls through to the INSERT and fails safely on the PK).
+  const prior = await findStudentRow(db, id);
+  if (prior && String(prior.branch_id) === bid) {
+    const existing = toStudent(prior);
+    // Replay also heals: if the first attempt died before provisioning the
+    // logins, the same retry creates them now instead of duplicating the row.
+    const studentLogin = await upsertStudentUserServer(
+      { nameAr: existing.nameAr, studentId: id, active: true },
+      actor,
+    );
+    const parentLogin = await upsertParentUserServer(
+      { nameAr: input.parentAr?.trim() || existing.parentAr || `ولي أمر ${existing.nameAr}`, studentId: id, active: true },
+      actor,
+    );
+    return { student: existing, login: { student: studentLogin, parent: parentLogin } };
+  }
   const annualFee = Number.isFinite(input.annualFee) ? Number(input.annualFee) : 0;
+  // Explicit class reference wins: validated against this branch, and its
+  // canonical label becomes the student's klass (legacy label path untouched
+  // when no classId is sent).
+  const classRef = await resolveEnrollmentClass(db, input.classId, bid);
+  const klassLabel = classRef ? classRef.klassLabel : (input.klass ?? "");
   await db.query(
     `INSERT INTO students (id, name_ar, name_fr, gender, klass, dob, place_of_birth, parent_ar, phone, enrolled, annual_fee, photo, email, branch_id, active, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, true, $15, $15)`,
@@ -315,7 +437,7 @@ export async function registerStudent(input: CreateStudentInput, actor: SafeUser
       nameAr,
       input.nameFr?.trim() ?? "",
       input.gender ?? "male",
-      input.klass ?? "",
+      klassLabel,
       input.dob ?? "",
       input.placeOfBirth ?? "",
       input.parentAr ?? "",
@@ -334,9 +456,20 @@ export async function registerStudent(input: CreateStudentInput, actor: SafeUser
     [uid("sbh"), id, bid, now, actor.id],
   );
 
-  // Optional bound portal login (registrar flow).
-  if (input.loginEmail || input.loginPassword) {
-    await upsertStudentUserServer(
+  // Both portal logins are part of registration itself (never opt-in): ids
+  // and passwords are auto-generated unless the registrar supplied explicit
+  // student values. There is no multi-statement transaction primitive in the
+  // DbLike layer, so partial failure is handled by compensation — if either
+  // provisioning fails after rows were written, everything created by this
+  // call (parent account, student account, history, student) is removed again
+  // and the error propagates, never silently leaving a partial registration.
+  // (The pre-existing manual «حساب الدخول» flow stays available for students
+  // registered before this behavior.)
+  let login: { student: StudentLoginResult; parent: ParentLoginResult };
+  let studentUserId = "";
+  let parentUserId = "";
+  try {
+    const studentLogin = await upsertStudentUserServer(
       {
         nameAr,
         nameEn: input.nameFr?.trim() || undefined,
@@ -347,6 +480,23 @@ export async function registerStudent(input: CreateStudentInput, actor: SafeUser
       },
       actor,
     );
+    studentUserId = studentLogin.user.id;
+    const parentLogin = await upsertParentUserServer(
+      {
+        nameAr: input.parentAr?.trim() || `ولي أمر ${nameAr}`,
+        studentId: id,
+        active: true,
+      },
+      actor,
+    );
+    parentUserId = parentLogin.user.id;
+    login = { student: studentLogin, parent: parentLogin };
+  } catch (err) {
+    if (parentUserId) await db.query("DELETE FROM users WHERE id = $1", [parentUserId]);
+    if (studentUserId) await db.query("DELETE FROM users WHERE id = $1", [studentUserId]);
+    await db.query("DELETE FROM student_branch_history WHERE student_id = $1", [id]);
+    await db.query("DELETE FROM students WHERE id = $1", [id]);
+    throw err;
   }
 
   await writeAudit({
@@ -359,9 +509,9 @@ export async function registerStudent(input: CreateStudentInput, actor: SafeUser
     entityType: "student",
     detail: `registered student in branch ${String(branch.rows[0].name_ar)}`,
   });
-  await ensureEnrollmentForKlass(db, id, bid, input.klass, actor);
+  await ensureEnrollmentForKlass(db, id, bid, klassLabel, actor, classRef?.id);
   const row = await findStudentRow(db, id);
-  return toStudent(row!);
+  return { student: toStudent(row!), login };
 }
 
 export async function updateStudent(
@@ -372,10 +522,14 @@ export async function updateStudent(
   const db = await getDb();
   const current = await findStudentRow(db, studentId);
   if (!current) throw new ApiError("الطالب غير موجود", 404);
-  await requireBranchAccess(actor, String(current.branch_id));
+  await requireStudentWriteAuthority(actor, String(current.branch_id));
 
   const nameAr = (input.nameAr ?? "").trim() || String(current.name_ar);
   const annualFee = input.annualFee !== undefined ? Number(input.annualFee) : Number(current.annual_fee ?? 0);
+  // Explicit class reference wins here too (same branch check as registration);
+  // otherwise the legacy klass label behavior is preserved untouched.
+  const classRef = await resolveEnrollmentClass(db, input.classId, String(current.branch_id));
+  const klassValue = classRef ? classRef.klassLabel : (input.klass !== undefined ? input.klass : String(current.klass ?? ""));
   const now = new Date().toISOString();
   await db.query(
     `UPDATE students SET
@@ -386,7 +540,7 @@ export async function updateStudent(
       nameAr,
       input.nameFr !== undefined ? input.nameFr.trim() : current.name_fr,
       input.gender ?? current.gender ?? "male",
-      input.klass !== undefined ? input.klass : current.klass,
+      klassValue,
       input.dob !== undefined ? input.dob : current.dob,
       input.placeOfBirth !== undefined ? input.placeOfBirth : current.place_of_birth,
       input.parentAr !== undefined ? input.parentAr : current.parent_ar,
@@ -409,8 +563,8 @@ export async function updateStudent(
     entityType: "student",
     detail: "updated student record",
   });
-  if (input.klass !== undefined) {
-    await ensureEnrollmentForKlass(db, studentId, String(current.branch_id), input.klass, actor);
+  if (input.klass !== undefined || classRef) {
+    await ensureEnrollmentForKlass(db, studentId, String(current.branch_id), klassValue, actor, classRef?.id);
   }
   const row = await findStudentRow(db, studentId);
   return toStudent(row!);
@@ -597,7 +751,7 @@ export async function removeStudent(studentId: string, actor: SafeUser): Promise
   const db = await getDb();
   const src = await findStudentRow(db, studentId);
   if (!src) throw new ApiError("الطالب غير موجود", 404);
-  await requireBranchAccess(actor, String(src.branch_id));
+  await requireStudentWriteAuthority(actor, String(src.branch_id));
   await db.query("UPDATE students SET active = false, updated_at = $1 WHERE id = $2", [new Date().toISOString(), studentId]);
   await deactivateStudentUserServer(studentId, actor);
   await writeAudit({
@@ -645,6 +799,41 @@ export async function getStudentPortfolioRelational(studentId: string, user: Saf
   }
   const student = toStudent(studentRow);
   await requireBranchAccess(user, student.branchId);
+  return buildStudentPortfolio(studentId);
+}
+
+/**
+ * Linked student record for a parent account. Powers GET /api/parent/student.
+ */
+export async function getParentLinkedStudent(parentUserId: string): Promise<StudentRow> {
+  const db = await getDb();
+  const linkedId = await resolveParentStudentId(parentUserId);
+  const row = await findStudentRow(db, linkedId);
+  if (!row) throw new ApiError("الطالب المرتبط غير موجود", 404);
+  return toStudent(row);
+}
+
+/**
+ * Link-resolved portfolio for a parent account: the database link is the
+ * entire authorization (no branch scope required, no client studentId ever
+ * trusted). Reuses the exact student portfolio builder below — same data,
+ * same published-only grades rule. Powers GET /api/parent/portfolio.
+ */
+export async function getParentStudentPortfolio(parentUserId: string): Promise<StudentPortfolioRow> {
+  const linkedId = await resolveParentStudentId(parentUserId);
+  const db = await getDb();
+  const row = await findStudentRow(db, linkedId);
+  if (!row) throw new ApiError("الطالب المرتبط غير موجود", 404);
+  return buildStudentPortfolio(linkedId);
+}
+
+async function buildStudentPortfolio(studentId: string): Promise<StudentPortfolioRow> {
+  const db = await getDb();
+  const studentRow = await findStudentRow(db, studentId);
+  if (!studentRow) {
+    throw new ApiError("الطالب غير موجود", 404);
+  }
+  const student = toStudent(studentRow);
 
   // Get current class enrollment
   const enrollmentRes = await db.query(
@@ -662,7 +851,7 @@ export async function getStudentPortfolioRelational(studentId: string, user: Saf
   const academicYearId = enrollmentRes.rows.length > 0 ? String(enrollmentRes.rows[0].academic_year_id) : null;
 
   // Get active terms
-  const termsRes = await db.query("SELECT id, name_ar, name_fr, order, active FROM terms WHERE active = true ORDER BY order ASC");
+  const termsRes = await db.query('SELECT id, name_ar, name_fr, "order", active FROM terms WHERE active = true ORDER BY "order" ASC');
   const terms = termsRes.rows.map((r) => ({
     id: String(r.id),
     nameAr: String(r.name_ar),
@@ -774,7 +963,7 @@ export async function getStudentPortfolioRelational(studentId: string, user: Saf
   const timetable: Array<{ day: number; slot: number; subjectId: string }> = [];
   if (classId) {
     const timetableRes = await db.query(
-      `SELECT day, slot, subject_id FROM timetable WHERE class_id = $1 ORDER BY day ASC, slot ASC`,
+      `SELECT day, slot, subject_id FROM timetable_entries WHERE class_id = $1 ORDER BY day ASC, slot ASC`,
       [classId],
     );
     timetableRes.rows.forEach((r) => {

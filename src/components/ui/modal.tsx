@@ -11,11 +11,11 @@ type ModalProps = {
 };
 
 const sizeClasses = {
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-lg",
-  xl: "max-w-xl",
-  "2xl": "max-w-2xl",
+  sm: "sm:max-w-sm",
+  md: "sm:max-w-md",
+  lg: "sm:max-w-lg",
+  xl: "sm:max-w-xl",
+  "2xl": "sm:max-w-2xl",
 } as const;
 
 export function Modal({ open, onClose, children, className, size = "md" }: ModalProps) {
@@ -25,19 +25,32 @@ export function Modal({ open, onClose, children, className, size = "md" }: Modal
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = original;
+    };
   }, [open, onClose]);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div
+      className="fade-in fixed inset-0 z-50 flex items-end justify-center bg-navy/45 p-0 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
         className={cn(
-          "flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-lg bg-surface shadow-[var(--shadow-window)]",
+          "flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-[var(--shadow-window)]",
+          "motion-safe:animate-[sheet-in_300ms_cubic-bezier(0.22,1,0.36,1)]",
+          "sm:max-h-[calc(100dvh-2rem)] sm:rounded-lg sm:motion-safe:animate-[pop-in_200ms_cubic-bezier(0.22,1,0.36,1)]",
           sizeClasses[size],
           className,
         )}
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -55,7 +68,7 @@ export function ModalContent({ children, className }: { children: ReactNode; cla
 }
 
 export function ModalFooter({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("shrink-0 flex items-center justify-end gap-2 border-t border-border px-6 py-4", className)}>{children}</div>;
+  return <div className={cn("shrink-0 flex flex-wrap items-center justify-end gap-2 border-t border-border px-6 py-4", className)}>{children}</div>;
 }
 
 type ConfirmDialogProps = {

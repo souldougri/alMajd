@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ReceiptText, Wallet } from "lucide-react";
 import { FeesView } from "@/components/desk/ops";
-import { PrintProvider } from "@/components/desk/print";
+import { PrintProvider, usePrintDocs } from "@/components/desk/print";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -256,6 +256,7 @@ function ExpensesPanel() {
   const expenses = useSchool((s) => s.expenses);
   const addExpense = useSchool((s) => s.addExpense);
   const deleteExpense = useSchool((s) => s.deleteExpense);
+  const { openPrint } = usePrintDocs();
   const [date, setDate] = useState(todayIso());
   const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
   const [amount, setAmount] = useState("");
@@ -268,7 +269,7 @@ function ExpensesPanel() {
     e.preventDefault();
     const amt = Number(amount) || 0;
     if (amt <= 0) return;
-    addExpense({
+    const id = addExpense({
       date,
       category,
       amount: amt,
@@ -283,6 +284,8 @@ function ExpensesPanel() {
     setAmount("");
     setVendor("");
     setNote("");
+    // The receipt is printable immediately after the expense is recorded.
+    openPrint({ kind: "expense-receipt", expenseId: id });
   }
 
   return (
@@ -353,13 +356,22 @@ function ExpensesPanel() {
                   <td className="px-4 py-3 text-navy/70">{ex.note}</td>
                   <td className="px-4 py-3 font-bold text-navy">{money(ex.amount)}</td>
                   <td className="px-4 py-3 text-center">
-                    <button
-                      type="button"
-                      className="rounded-lg px-2 py-1 text-xs text-danger hover:bg-danger hover:text-white"
-                      onClick={() => deleteExpense(ex.id)}
-                    >
-                      حذف
-                    </button>
+                    <div className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="rounded-lg px-2 py-1 text-xs font-bold text-navy hover:bg-cream"
+                        onClick={() => openPrint({ kind: "expense-receipt", expenseId: ex.id })}
+                      >
+                        إيصال
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-lg px-2 py-1 text-xs text-danger hover:bg-danger hover:text-white"
+                        onClick={() => deleteExpense(ex.id)}
+                      >
+                        حذف
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

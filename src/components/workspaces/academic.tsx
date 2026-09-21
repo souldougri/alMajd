@@ -39,7 +39,7 @@ export function AcademicPage() {
   return (
     <WorkspaceFrame ws="academic">
       <div className="space-y-6">
-        <div className="rounded-2xl border border-navy/10 bg-white p-4 shadow-sm sm:p-6">
+        <div className="am-card p-4 shadow-sm sm:p-6">
           <PrintProvider>
             <AcademicTabs />
           </PrintProvider>
@@ -127,8 +127,8 @@ function TermsPanel() {
         </div>
       </form>
 
-      <div className="overflow-x-auto rounded-2xl border border-navy/10">
-        <table className="w-full text-right text-sm">
+      <div className="am-table-wrap">
+        <table className="am-table">
           <thead>
             <tr className="border-b border-navy/10 bg-cream-subtle text-navy">
               <th className="px-4 py-3 font-bold">الفترة</th>
@@ -234,8 +234,8 @@ function ExamSessionsPanel() {
         </div>
       </form>
 
-      <div className="overflow-x-auto rounded-2xl border border-navy/10">
-        <table className="w-full text-right text-sm">
+      <div className="am-table-wrap">
+        <table className="am-table">
           <thead>
             <tr className="border-b border-navy/10 bg-cream-subtle text-navy">
               <th className="px-4 py-3 font-bold">الجلسة</th>
@@ -314,8 +314,8 @@ function TimetablePanel() {
           اختر صفًا أعلاه لتحرير جدوله الزمني.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-navy/10">
-          <table className="w-full min-w-[42rem] text-right text-sm">
+        <div className="am-table-wrap">
+          <table className="am-table min-w-[42rem]">
             <thead>
               <tr className="border-b border-navy/10 bg-cream-subtle text-navy">
                 <th className="px-4 py-3 font-bold">اليوم</th>

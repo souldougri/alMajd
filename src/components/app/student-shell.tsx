@@ -188,7 +188,7 @@ export function StudentShell() {
       />
       <main className="mx-auto w-full max-w-5xl flex-1 p-4">
         {/* Profile card */}
-        <section className="flex flex-wrap items-center gap-4 rounded-2xl bg-white p-5 shadow-sm">
+        <section className="flex flex-wrap items-center gap-4 am-card p-5">
           <div className="flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-navy text-gold">
             {student.photo ? (
               <img src={student.photo} alt={student.nameAr} className="size-full object-cover" />
@@ -232,7 +232,7 @@ export function StudentShell() {
         </div>
 
         {tab === "results" ? (
-          <section className="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+          <section className="mt-4 am-card p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-display text-lg font-bold">النتائج الدراسية</h2>
               <div className="flex flex-wrap gap-1.5">
@@ -332,21 +332,21 @@ export function StudentShell() {
         ) : tab === "attendance" ? (
           <section className="mt-4 space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
+              <div className="am-card p-5">
                 <p className="flex items-center gap-2 text-sm font-bold text-navy/60">
                   <span className="size-2.5 rounded-full bg-success" />
                   الأيام الحضور
                 </p>
                 <p className="mt-2 font-display text-2xl font-bold text-success">{attendanceCounts.present}</p>
               </div>
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
+              <div className="am-card p-5">
                 <p className="flex items-center gap-2 text-sm font-bold text-navy/60">
                   <span className="size-2.5 rounded-full bg-gold" />
                   التأخير
                 </p>
                 <p className="mt-2 font-display text-2xl font-bold text-navy">{attendanceCounts.late}</p>
               </div>
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
+              <div className="am-card p-5">
                 <p className="flex items-center gap-2 text-sm font-bold text-navy/60">
                   <span className="size-2.5 rounded-full bg-danger" />
                   الغياب
@@ -355,7 +355,7 @@ export function StudentShell() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
+            <div className="am-card p-5">
               <h3 className="font-display text-lg font-bold">سجل الحضور والغياب</h3>
               <div className="mt-3 overflow-x-auto">
                 {!portfolio || portfolio.attendance.length === 0 ? (
@@ -386,7 +386,7 @@ export function StudentShell() {
             </div>
           </section>
         ) : tab === "timetable" ? (
-          <section className="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+          <section className="mt-4 am-card p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-display text-lg font-bold">الجدول الزمني — {portfolio?.className ?? ""}</h3>
             </div>
@@ -430,7 +430,7 @@ export function StudentShell() {
             </div>
           </section>
         ) : tab === "warnings" ? (
-          <section className="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+          <section className="mt-4 am-card p-5">
             <h3 className="font-display text-lg font-bold">الملاحظات الموجّهة إليك</h3>
             {!portfolio || portfolio.warnings.length === 0 ? (
               <p className="py-6 text-center text-sm text-navy/50">لا توجد ملاحظات مسجّلة بحقك. أحسنت!</p>
@@ -455,21 +455,21 @@ export function StudentShell() {
         ) : (
           <section className="mt-4 space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
+              <div className="am-card p-5">
                 <p className="flex items-center gap-2 text-sm font-bold text-navy/60">
                   <CreditCard className="size-4 text-gold" />
                   الرسوم السنوية
                 </p>
                 <p className="mt-2 font-display text-2xl font-bold text-navy">{money(student.annualFee)}</p>
               </div>
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
+              <div className="am-card p-5">
                 <p className="flex items-center gap-2 text-sm font-bold text-navy/60">
                   <Wallet className="size-4 text-gold" />
                   المدفوع
                 </p>
                 <p className="mt-2 font-display text-2xl font-bold text-success">{money(portfolio?.paid ?? 0)}</p>
               </div>
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
+              <div className="am-card p-5">
                 <p className="flex items-center gap-2 text-sm font-bold text-navy/60">
                   <AlertTriangle className="size-4 text-gold" />
                   المتبقي
@@ -485,7 +485,7 @@ export function StudentShell() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
+            <div className="am-card p-5">
               <h3 className="font-display text-lg font-bold">سجل الدفعات</h3>
               <div className="mt-3 overflow-x-auto">
                 {!portfolio || portfolio.payments.length === 0 ? (

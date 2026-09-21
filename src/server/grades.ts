@@ -235,9 +235,26 @@ export async function listGrades(
     params.push(opts.assessmentId);
     where += ` AND g.assessment_id = $${params.length}`;
   }
-  if (opts?.studentId) {
-    params.push(opts.studentId);
+  // Students are always confined to their own grades, and only for terms
+  // whose bulletin is published for the class (same visibility rule as the
+  // student portal and the report cards).
+  const studentFilter = actor.role === "student" ? (actor.studentId ?? "__none__") : opts?.studentId;
+  if (studentFilter) {
+    params.push(studentFilter);
     where += ` AND g.student_id = $${params.length}`;
+  }
+  if (actor.role === "student") {
+    where += ` AND EXISTS (
+      SELECT 1 FROM published_results pr
+      WHERE pr.class_id = c.id AND pr.term_id = a.term_id AND pr.published = true
+    )`;
+  }
+  // Branch scope is mandatory, with or without filters: a caller must never
+  // enumerate grades of branches outside their assignment scope.
+  const scope = await getUserBranchScope(actor);
+  if (!isAllScope(scope)) {
+    params.push(scope.length > 0 ? scope : ["__none__"]);
+    where += ` AND c.branch_id = ANY($${params.length}::text[])`;
   }
   const result = await (
     await getDb()
@@ -246,6 +263,8 @@ export async function listGrades(
             COALESCE(u.name_ar, '') AS recorded_by_name, g.created_at, g.updated_at
      FROM grades g
      JOIN students st ON st.id = g.student_id
+     JOIN assessments a ON a.id = g.assessment_id
+     JOIN classes c ON c.id = a.class_id
      LEFT JOIN users u ON u.id = g.recorded_by_user_id
      WHERE ${where}
      ORDER BY st.name_ar ASC, g.id DESC`,

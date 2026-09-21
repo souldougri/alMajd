@@ -12,6 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { ConfirmDialog, Modal, ModalContent, ModalFooter, ModalHeader } from "@/components/ui/modal";
+import { BranchReports } from "@/components/reports/branch-reports";
 import { Badge } from "@/components/ui/badge";
 import { DUTY_LABELS, type SafeUser, type StaffDuty } from "@/lib/auth/types";
 import { getUsers } from "@/lib/auth/users";
@@ -311,12 +312,12 @@ export function BranchManagement() {
 
           <section className={cn("space-y-4 lg:col-span-2", !selected && "max-lg:hidden")} aria-label="تفاصيل الفرع">
             {!selected ? (
-              <p className="rounded-2xl border border-navy/10 bg-white p-8 text-center text-sm text-navy/55">
+              <p className="am-card p-8 text-center text-sm text-navy/55">
                 اختر فرعًا من القائمة لعرض تفاصيله وإدارته.
               </p>
             ) : (
               <>
-                <div className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
+                <div className="am-card p-5 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <button
@@ -442,6 +443,8 @@ export function BranchManagement() {
                       onRemove={(d) => setConfirm({ kind: "duty", id: d.id, label: `${userName(d.userId)} — ${DUTY_LABELS[d.dutyCode as StaffDuty]?.ar ?? d.dutyCode}` })}
                     />
 
+                    <BranchReports branchId={selected.id} />
+
                     <AuthorityExplainer />
                   </>
                 )}
@@ -534,7 +537,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
+    <section className="am-card p-5 shadow-sm">
       <h3 className="flex items-center gap-2 font-bold text-navy">
         <Icon className="size-4 text-gold" />
         {title}

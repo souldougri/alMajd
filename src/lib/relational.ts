@@ -833,6 +833,7 @@ export async function hydrateStore(apply: (patch: StorePatch) => void): Promise<
       id: c.id,
       nameAr: c.nameAr,
       nameFr: c.nameFr,
+      branchId: c.branchId,
       level: c.level,
       section: c.section,
       capacity: c.capacity,
@@ -886,6 +887,7 @@ export async function hydrateStore(apply: (patch: StorePatch) => void): Promise<
       annualFee: s.annualFee ?? 0,
       photo: s.photo,
       email: s.email,
+      branchId: s.branchId,
     }));
     known.students.clear();
     students.forEach((s) => known.students.add(s.id));

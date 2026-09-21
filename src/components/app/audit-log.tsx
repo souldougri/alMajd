@@ -66,16 +66,16 @@ export function AuditLogView() {
         سجل التدقيق (Audit Log)
       </h2>
       {loading ? (
-        <div className="rounded-2xl border border-navy/10 bg-white p-8 text-center text-sm text-navy/55 shadow-sm">
+        <div className="am-card p-8 text-center text-sm text-navy/55 shadow-sm">
           جارٍ تحميل سجل التدقيق…
         </div>
       ) : logs.length === 0 ? (
-        <div className="rounded-2xl border border-navy/10 bg-white p-8 text-center text-sm text-navy/55 shadow-sm">
+        <div className="am-card p-8 text-center text-sm text-navy/55 shadow-sm">
           لا توجد أحداث مسجلة بعد. سيتم تسجيل إجراءات إدارة المستخدمين والعمليات المدرسية هنا.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-navy/10 bg-white shadow-sm">
-          <table className="w-full min-w-[620px] text-right text-sm">
+        <div className="overflow-x-auto am-card shadow-sm">
+          <table className="am-table min-w-[620px]">
             <thead>
               <tr className="border-b border-navy/10 bg-cream-subtle text-navy">
                 <th className="px-4 py-3 font-bold">التاريخ</th>

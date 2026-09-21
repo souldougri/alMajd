@@ -244,6 +244,12 @@ export async function assignBranchResponsibility(
   if (!dutyCode || typeof dutyCode !== "string") {
     throw new ApiError("رمز المهمة مفقود", 400);
   }
+  // Branch Heads must never delegate financial duties: the Financial Officer
+  // reports directly to the General Manager via the dedicated Financial
+  // Officer architecture. super_admin (GM) delegation is unaffected.
+  if (dutyCode === "accountant" && actor.role !== "super_admin") {
+    throw new ApiError("لا يمكن تفويض مهام المحاسبة والدفعات من مدير الفرع — المسؤول المالي يتبع المدير العام مباشرة", 403);
+  }
   const db = await getDb();
   // Verify duty exists
   const duty = await db.query("SELECT code FROM duties WHERE code = $1", [dutyCode]);

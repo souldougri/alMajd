@@ -4,11 +4,11 @@
  * Files are stored under `.data/uploads/docs/`; metadata lives in the
  * `documents` table. Server-only module — never import from client code.
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { getDb, type DbRow } from "./db";
 import { ApiError } from "./http";
-import { uid } from "./auth";
+import { resolveParentStudentId, uid } from "./auth";
 import { getUserBranchScope, hasBranchAccess, isAllScope } from "./scope";
 import { DOCS_DIR, MAX_UPLOAD_BYTES, validateUpload } from "./uploads";
 import type { SafeUser } from "@/lib/auth/types";
@@ -171,8 +171,8 @@ function assertAllowedCategory(c: unknown): asserts c is DocCategory {
 }
 
 export async function createDocument(user: SafeUser, input: UploadInput): Promise<DocumentRow> {
-  if (user.role === "student") {
-    throw new ApiError("حسابات الطلاب لا يمكنها رفع مستندات", 403);
+  if (user.role === "student" || user.role === "parent") {
+    throw new ApiError("حسابات الطلاب وأولياء الأمور لا يمكنها رفع مستندات", 403);
   }
 
   assertAllowedVisibility(input.visibility);
@@ -237,13 +237,9 @@ export async function createDocument(user: SafeUser, input: UploadInput): Promis
   const id = uid("doc");
   const storedName = `${id}${ext}`;
   const dir = DOCS_DIR;
-  await mkdir(dir, { recursive: true });
 
-  if (input.bytes.byteLength > MAX_UPLOAD_BYTES) {
-    throw new ApiError(`حجم الملف يتجاوز الحد الأقصى المسموح (10 MB)`);
-  }
-  await writeFile(join(dir, storedName), input.bytes);
-
+  // Branch scope is resolved and enforced BEFORE anything touches the disk,
+  // so a denied upload never leaves an orphan file behind.
   const resolvedBranchId = await resolveDocumentBranch({
     classId: classId ?? undefined,
     studentId: studentId ?? undefined,
@@ -253,30 +249,44 @@ export async function createDocument(user: SafeUser, input: UploadInput): Promis
     await requireBranchOrGlobal(user, resolvedBranchId);
   }
 
+  await mkdir(dir, { recursive: true });
+
+  if (input.bytes.byteLength > MAX_UPLOAD_BYTES) {
+    throw new ApiError(`حجم الملف يتجاوز الحد الأقصى المسموح (10 MB)`);
+  }
+  await writeFile(join(dir, storedName), input.bytes);
+
   const now = new Date().toISOString();
-  await (
-    await getDb()
-  ).query(
-    `INSERT INTO documents (id, title, category, visibility, class_id, student_id, branch_id, filename, stored_name, size_bytes, mime, uploaded_by_user_id, uploaded_by_name, archived, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-    [
-      id,
-      title,
-      input.category,
-      visibility,
-      classId,
-      studentId,
-      resolvedBranchId,
-      input.filename,
-      storedName,
-      input.byteLength,
-      mime,
-      user.id,
-      user.nameAr,
-      false,
-      now,
-    ],
-  );
+  try {
+    await (
+      await getDb()
+    ).query(
+      `INSERT INTO documents (id, title, category, visibility, class_id, student_id, branch_id, filename, stored_name, size_bytes, mime, uploaded_by_user_id, uploaded_by_name, archived, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+      [
+        id,
+        title,
+        input.category,
+        visibility,
+        classId,
+        studentId,
+        resolvedBranchId,
+        input.filename,
+        storedName,
+        input.byteLength,
+        mime,
+        user.id,
+        user.nameAr,
+        false,
+        now,
+      ],
+    );
+  } catch (err) {
+    // The file was already written: remove it so a failed insert never
+    // leaves an orphan file on disk without a metadata row.
+    await unlink(join(dir, storedName)).catch(() => undefined);
+    throw err;
+  }
 
   const created = (await findDocument(id)) as StoredDocument;
   return enrichDocuments([created], user, await classMap())[0];
@@ -413,14 +423,67 @@ export async function downloadDocument(user: SafeUser, id: string): Promise<Down
   if (!(await canSeeDocument(user, doc))) {
     throw new ApiError("غير مصرح لك بتحميل هذا المستند", 403);
   }
-  let buffer: Buffer;
+  const mime = ALLOWED_BY_EXT[extname(doc.filename).toLowerCase()] ?? "application/octet-stream";
+  return { buffer: await readDocBytes(doc), filename: doc.filename, mime };
+}
+
+async function readDocBytes(doc: StoredDocument): Promise<Buffer> {
   try {
-    buffer = await readFile(join(DOCS_DIR, doc.storedName));
+    return await readFile(join(DOCS_DIR, doc.storedName));
   } catch {
     throw new ApiError("ملف المستند غير موجود على الخادم", 404);
   }
+}
+
+/**
+ * Ownership gate for a parent account: a document is visible only when it is
+ * bound to the linked student (linked_student) or to that student's current
+ * enrolled class (one_class) — the exact equivalent of what the student
+ * would see. Archived and all other visibilities are never visible.
+ */
+export async function canParentSeeDocument(linkedStudentId: string, doc: StoredDocument): Promise<boolean> {
+  if (doc.archived) return false;
+  if (doc.visibility === "linked_student") return doc.studentId === linkedStudentId;
+  if (doc.visibility === "one_class" && doc.classId) {
+    const db = await getDb();
+    const cur = await db.query(
+      "SELECT 1 FROM student_class_enrollments WHERE student_id = $1 AND class_id = $2 AND is_current = true AND status = 'enrolled' LIMIT 1",
+      [linkedStudentId, doc.classId],
+    );
+    return cur.rows.length > 0;
+  }
+  return false;
+}
+
+function parentViewer(userId: string): SafeUser {
+  return { id: userId, email: "", nameAr: "", nameEn: "", role: "parent", active: true, duties: [], createdAt: "", updatedAt: "" };
+}
+
+/**
+ * Documents visible to a parent account. The linked student id comes only
+ * from the database link — client-supplied ids can never widen the scope.
+ */
+export async function listParentDocuments(parentUserId: string): Promise<DocumentRow[]> {
+  const linkedId = await resolveParentStudentId(parentUserId);
+  const all = await listAllStored();
+  const names = await classMap();
+  const visible: StoredDocument[] = [];
+  for (const d of all) {
+    if (await canParentSeeDocument(linkedId, d)) visible.push(d);
+  }
+  return enrichDocuments(visible, parentViewer(parentUserId), names);
+}
+
+/** Parent-scoped download behind the same ownership gate. */
+export async function downloadParentDocument(parentUserId: string, id: string): Promise<DownloadResult> {
+  const linkedId = await resolveParentStudentId(parentUserId);
+  const doc = await findDocument(id);
+  if (!doc) throw new ApiError("المستند غير موجود", 404);
+  if (!(await canParentSeeDocument(linkedId, doc))) {
+    throw new ApiError("غير مصرح لك بتحميل هذا المستند", 403);
+  }
   const mime = ALLOWED_BY_EXT[extname(doc.filename).toLowerCase()] ?? "application/octet-stream";
-  return { buffer, filename: doc.filename, mime };
+  return { buffer: await readDocBytes(doc), filename: doc.filename, mime };
 }
 
 const ALLOWED_BY_EXT: Record<string, string> = {

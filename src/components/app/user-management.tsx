@@ -202,15 +202,15 @@ export function UserManagement() {
         <div className="mb-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm font-medium text-danger">{error}</div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-2xl border border-navy/10 bg-white shadow-sm">
-        <table className="w-full min-w-[560px] text-right text-sm">
+      <div className="am-table-wrap">
+        <table className="am-table min-w-[560px]">
           <thead>
-            <tr className="border-b border-navy/10 bg-cream-subtle text-navy">
-              <th className="px-4 py-3 font-bold">الاسم</th>
-              <th className="px-4 py-3 font-bold">البريد</th>
-              <th className="px-4 py-3 font-bold">الدور</th>
-              <th className="px-4 py-3 font-bold">الحالة</th>
-              <th className="px-4 py-3 text-center font-bold">إجراءات</th>
+            <tr>
+              <th>الاسم</th>
+              <th>البريد</th>
+              <th>الدور</th>
+              <th>الحالة</th>
+              <th className="text-center">إجراءات</th>
             </tr>
           </thead>
           <tbody>
@@ -222,13 +222,13 @@ export function UserManagement() {
               </tr>
             ) : (
               users.map((u) => (
-                <tr key={u.id} className="border-b border-navy/5 last:border-0 hover:bg-cream">
-                  <td className="px-4 py-3">
+                <tr key={u.id} className="hover:bg-cream">
+                  <td>
                     <p className="font-bold text-navy">{u.nameAr}</p>
                     <p className="text-xs text-navy/55">{u.nameEn}</p>
                   </td>
-                  <td className="px-4 py-3 text-navy/75" dir="ltr">{u.email}</td>
-                  <td className="px-4 py-3">
+                  <td className="text-navy/75" dir="ltr">{u.email}</td>
+                  <td>
                     <span className="rounded-full bg-navy px-2.5 py-1 text-xs font-semibold text-gold">
                       {ROLE_LABELS[u.role]?.ar ?? u.role}
                     </span>
@@ -259,21 +259,22 @@ export function UserManagement() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="grid grid-cols-2 gap-1 sm:flex sm:items-center sm:justify-center sm:gap-1">
-                      <button type="button" title="تعديل" className="flex size-11 items-center justify-center rounded-lg text-navy/60 hover:bg-navy hover:text-gold" onClick={() => openEdit(u)}>
+                      <button type="button" title="تعديل" aria-label={`تعديل ${u.nameAr}`} className="flex size-11 items-center justify-center rounded-lg text-navy/60 hover:bg-navy hover:text-gold" onClick={() => openEdit(u)}>
                         <Pencil className="size-4" />
                       </button>
-                      <button type="button" title="إعادة تعيين كلمة المرور" className="flex size-11 items-center justify-center rounded-lg text-navy/60 hover:bg-navy hover:text-gold" onClick={() => setResetTarget(u)}>
+                      <button type="button" title="إعادة تعيين كلمة المرور" aria-label={`إعادة تعيين كلمة مرور ${u.nameAr}`} className="flex size-11 items-center justify-center rounded-lg text-navy/60 hover:bg-navy hover:text-gold" onClick={() => setResetTarget(u)}>
                         <KeyRound className="size-4" />
                       </button>
                       <button
                         type="button"
                         title={u.active ? "تعطيل" : "تفعيل"}
+                        aria-label={`${u.active ? "تعطيل" : "تفعيل"} ${u.nameAr}`}
                         className="flex size-11 items-center justify-center rounded-lg text-navy/60 hover:bg-navy hover:text-gold"
                         onClick={() => handleToggle(u)}
                       >
                         {u.active ? <UserX className="size-4" /> : <UserCheck className="size-4" />}
                       </button>
-                      <button type="button" title="حذف" className="flex size-11 items-center justify-center rounded-lg text-danger/70 hover:bg-danger hover:text-white" onClick={() => handleDelete(u)}>
+                      <button type="button" title="حذف" aria-label={`حذف ${u.nameAr}`} className="flex size-11 items-center justify-center rounded-lg text-danger/70 hover:bg-danger hover:text-white" onClick={() => handleDelete(u)}>
                         <Trash2 className="size-4" />
                       </button>
                     </div>

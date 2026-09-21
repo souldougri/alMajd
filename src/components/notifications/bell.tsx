@@ -120,7 +120,7 @@ export function NotificationBell() {
           role="dialog"
           aria-label="الإشعارات"
           style={{ top: pos.top, right: pos.right, maxHeight, width: Math.min(MAX_WIDTH, document.documentElement.clientWidth - EDGE * 2) }}
-          className="fixed z-[90] flex flex-col overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-xl"
+          className="fixed z-[90] flex flex-col overflow-hidden am-card shadow-xl"
         >
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-navy/10 bg-cream px-4 py-3">
             <div className="min-w-0">

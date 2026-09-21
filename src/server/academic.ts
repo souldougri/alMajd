@@ -8,7 +8,7 @@
 import { getDb, type DbRow } from "./db";
 import { uid, writeAudit } from "./auth";
 import { ApiError } from "./http";
-import { getUserBranchScope, requireBranchAccess, requireBranchId } from "./scope";
+import { getUserBranchScope, requireBranchAccess, requireBranchHeadOrAdmin, requireBranchId } from "./scope";
 import type { SafeUser } from "@/lib/auth/types";
 
 // ---------------------------------------------------------------------------
@@ -464,7 +464,7 @@ export async function createClass(
   const bid = requireBranchId(input.branchId);
   await requireBranchAccess(actor, bid);
   if (actor.role !== "super_admin" && !actor.duties.includes("academic") && !actor.duties.includes("registrar")) {
-    throw new ApiError("غير مصرح لك — إنشاء الفصول يتطلب صلاحية دراسية أو سجل", 403);
+    await requireBranchHeadOrAdmin(actor, bid);
   }
   const nameAr = input.nameAr.trim();
   if (!nameAr) throw new ApiError("يرجى إدخال اسم الفصل");
@@ -497,7 +497,7 @@ export async function updateClass(
   const cls = await requireClassNotFound(db, classId);
   await requireBranchAccess(actor, cls.branchId);
   if (actor.role !== "super_admin" && !actor.duties.includes("academic") && !actor.duties.includes("registrar")) {
-    throw new ApiError("غير مصرح لك", 403);
+    await requireBranchHeadOrAdmin(actor, cls.branchId);
   }
   const nameAr = (input.nameAr ?? "").trim() || cls.nameAr;
   if (nameAr !== cls.nameAr) {
@@ -577,7 +577,7 @@ export async function setClassSubject(
   const cls = await requireClassNotFound(db, input.classId);
   await requireBranchAccess(actor, cls.branchId);
   if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
-    throw new ApiError("غير مصرح لك — إدارة مواد الفصل تتطلب صلاحية دراسية", 403);
+    await requireBranchHeadOrAdmin(actor, cls.branchId);
   }
   const subj = await db.query("SELECT id FROM subjects WHERE id = $1", [input.subjectId]);
   if (subj.rows.length === 0) throw new ApiError("المادة غير موجودة", 404);
@@ -633,7 +633,7 @@ export async function upsertTimetableEntry(
   const cls = await requireClassNotFound(db, input.classId);
   await requireBranchAccess(actor, cls.branchId);
   if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
-    throw new ApiError("غير مصرح لك", 403);
+    await requireBranchHeadOrAdmin(actor, cls.branchId);
   }
   await db.query(
     `INSERT INTO timetable_entries (id, class_id, day, slot, subject_id) VALUES ($1, $2, $3, $4, $5)
@@ -658,7 +658,9 @@ export async function removeTimetableEntry(entryId: string, actor: SafeUser): Pr
   if (row.rows.length === 0) throw new ApiError("الحصة غير موجودة", 404);
   const cls = await requireClassNotFound(db, String(row.rows[0].class_id));
   await requireBranchAccess(actor, cls.branchId);
-  if (actor.role !== "super_admin" && !actor.duties.includes("academic")) throw new ApiError("غير مصرح لك", 403);
+  if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
+    await requireBranchHeadOrAdmin(actor, cls.branchId);
+  }
   await db.query("DELETE FROM timetable_entries WHERE id = $1", [entryId]);
 }
 
@@ -707,7 +709,7 @@ export async function createExamSession(
   const bid = requireBranchId(input.branchId);
   await requireBranchAccess(actor, bid);
   if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
-    throw new ApiError("غير مصرح لك", 403);
+    await requireBranchHeadOrAdmin(actor, bid);
   }
   const db = await getDb();
   const id = input.id?.trim() || uid("esx");
@@ -730,7 +732,9 @@ export async function deleteExamSession(sessionId: string, actor: SafeUser): Pro
   const row = await db.query("SELECT id, branch_id FROM exam_sessions WHERE id = $1", [sessionId]);
   if (row.rows.length === 0) throw new ApiError("الجلسة غير موجودة", 404);
   await requireBranchAccess(actor, String(row.rows[0].branch_id));
-  if (actor.role !== "super_admin" && !actor.duties.includes("academic")) throw new ApiError("غير مصرح لك", 403);
+  if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
+    await requireBranchHeadOrAdmin(actor, String(row.rows[0].branch_id));
+  }
   await db.query("DELETE FROM exam_sessions WHERE id = $1", [sessionId]);
 }
 
@@ -758,12 +762,12 @@ export async function setPublishedResults(
   published: boolean,
   actor: SafeUser,
 ): Promise<PublishedResultRow> {
-  if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
-    throw new ApiError("غير مصرح لك — نشر النتائج يتطلب صلاحية الشؤون الدراسية", 403);
-  }
   const db = await getDb();
   const cls = await requireClassNotFound(db, classId);
   await requireBranchAccess(actor, cls.branchId);
+  if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
+    await requireBranchHeadOrAdmin(actor, cls.branchId);
+  }
   await db.query(
     `INSERT INTO published_results (class_id, term_id, published, updated_at)
      VALUES ($1, $2, $3, $4)

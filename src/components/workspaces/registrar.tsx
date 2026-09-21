@@ -10,12 +10,12 @@ export function RegistrarPage() {
   return (
     <WorkspaceFrame ws="registrar">
       <div className="space-y-6">
-        <div className="rounded-2xl border border-navy/10 bg-white p-4 shadow-sm sm:p-6">
+        <div className="am-card p-4 shadow-sm sm:p-6">
           <PrintProvider>
             <StudentsView mode="registrar" />
           </PrintProvider>
         </div>
-        <div className="rounded-2xl border border-navy/10 bg-white p-4 shadow-sm sm:p-6">
+        <div className="am-card p-4 shadow-sm sm:p-6">
           <PrintProvider>
             <DocumentsPanel
               canUpload

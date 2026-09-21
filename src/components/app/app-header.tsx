@@ -67,6 +67,7 @@ export function AppHeader({ nav }: { nav?: AppNav }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-navy/10 bg-white shadow-sm">
+      <div className="h-0.5 w-full bg-gradient-to-l from-gold via-gold-light to-navy" aria-hidden="true" />
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
         <div className="flex min-w-0 items-center gap-3">
           {hasMenu ? (

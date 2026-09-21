@@ -39,6 +39,7 @@ export const Route = createFileRoute("/api/students/$id")({
               nameFr: str(body.nameFr),
               gender: str(body.gender),
               klass: str(body.klass),
+              classId: str(body.classId),
               dob: str(body.dob),
               placeOfBirth: str(body.placeOfBirth),
               parentAr: str(body.parentAr),

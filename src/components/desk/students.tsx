@@ -5,15 +5,26 @@ import { ConfirmDialog } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePrintDocs } from "@/components/desk/print";
+import { StudentRegistrationModal } from "@/components/students/student-registration-modal";
 import { deactivateStudentLogin, ensureStudentLogin } from "@/lib/auth/users";
 import { writeAuditEntry } from "@/lib/audit";
+import type { BranchStudent, BranchStudentRegistration } from "@/lib/branches";
 import { money } from "@/lib/school";
 import { useSchool } from "@/lib/store";
 import { processPhotoFile } from "@/lib/utils";
 import type { Gender, Student } from "@/lib/types";
 
-export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } = {}) {
+export function StudentsView({ mode = "full", branchId, onRegistered }: {
+  mode?: "full" | "registrar" | "branch";
+  /**
+   * Fixed branch scope for branch-head usage: lists are filtered to this
+   * branch, registration locks to it, and finance/delete UI stays hidden.
+   */
+  branchId?: string;
+  onRegistered?: (result: BranchStudentRegistration) => void;
+} = {}) {
   const registrar = mode === "registrar";
+  const branch = mode === "branch";
   const students = useSchool((s) => s.students);
   const classes = useSchool((s) => s.classes);
   const terms = useSchool((s) => s.terms);
@@ -29,6 +40,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
   const { openPrint } = usePrintDocs();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [regOpen, setRegOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [rosterClassId, setRosterClassId] = useState("");
@@ -42,18 +54,28 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
   const [loginResult, setLoginResult] = useState<{ studentId: string; email: string; password: string; created: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const scopedStudents = useMemo(
+    // Branch scope: the head works on one branch only (server scope already
+    // filters, this keeps other headed branches out of sight too).
+    () => (branch && branchId ? students.filter((s) => s.branchId === branchId) : students),
+    [students, branch, branchId],
+  );
   const filtered = useMemo(() => {
-    let list = students;
+    let list = scopedStudents;
     if (rosterClassId) list = list.filter((s) => s.classId === rosterClassId);
     const t = q.trim();
     if (!t) return list;
     return list.filter(
       (s) => s.nameAr.includes(t) || s.nameFr.toLowerCase().includes(t.toLowerCase()) || s.klass.includes(t),
     );
-  }, [q, students, rosterClassId]);
+  }, [q, scopedStudents, rosterClassId]);
+  const branchClasses = useMemo(
+    () => (branch && branchId ? classes.filter((c) => c.branchId === branchId) : classes),
+    [classes, branch, branchId],
+  );
 
   const current = filtered.find((s) => s.id === selectedId) ?? filtered[0];
-  const editingStudent = editingId ? students.find((s) => s.id === editingId) : null;
+  const editingStudent = editingId ? scopedStudents.find((s) => s.id === editingId) : null;
 
   const absenceSummary = useMemo(() => {
     if (!current) return { absent: 0, late: 0, last: null as string | null };
@@ -125,22 +147,43 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
     }
   }
 
+  // Mirror the server-registered student into the local roster store so the
+  // table, print roster and documents keep working (server id is kept).
+  function syncRegistered(result: BranchStudentRegistration) {
+    const s = result.student as BranchStudent & Partial<Student>;
+    addStudent({
+      id: s.id,
+      nameAr: s.nameAr,
+      nameFr: s.nameFr ?? s.nameAr,
+      gender: s.gender === "female" ? "female" : "male",
+      klass: s.klass ?? "",
+      classId: s.classId,
+      dob: s.dob ?? "",
+      placeOfBirth: s.placeOfBirth ?? "",
+      parentAr: s.parentAr ?? "—",
+      phone: s.phone ?? "—",
+      enrolled: s.enrolled ?? new Date().toISOString().slice(0, 10),
+      annualFee: typeof s.annualFee === "number" ? s.annualFee : 0,
+      email: result.login.student.email || undefined,
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary">تسجيل الطلاب</h1>
+          <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">تسجيل الطلاب</h1>
           <p className="text-sm text-fg-muted">ملفات القيد · Inscriptions</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
-            className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+            className="h-11 am-input"
             value={rosterClassId}
             onChange={(e) => setRosterClassId(e.target.value)}
             aria-label="تصفية الفصل"
           >
             <option value="">— كل الفصول —</option>
-            {classes
+            {branchClasses
               .filter((c) => c.active)
               .map((c) => (
                 <option key={c.id} value={c.id}>
@@ -161,13 +204,22 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
           >
             طباعة القائمة
           </Button>
-          <Button onClick={() => { setEditingId(null); setOpen((v) => !v); }}>
+          <Button
+            onClick={() => {
+              if (registrar || branch) {
+                setRegOpen(true);
+                return;
+              }
+              setEditingId(null);
+              setOpen((v) => !v);
+            }}
+          >
             {open ? "إغلاق النموذج" : "تسجيل جديد"}
           </Button>
         </div>
       </div>
 
-      {open ? (
+      {open && (!branch || editingId) ? (
         <StudentForm
           onDone={() => { setOpen(false); setEditingId(null); }}
           onSave={(data) => {
@@ -183,15 +235,25 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
               });
               return;
             }
-            const created = addStudent(data as Omit<Student, "id">);
-            if (registrar) void createLogin(created);
+            addStudent(data as Omit<Student, "id">);
           }}
           student={editingStudent ?? undefined}
-          classes={classes}
+          classes={branch ? branchClasses : classes}
           allowLoginEmail={registrar}
           defaultClassId={rosterClassId || undefined}
         />
       ) : null}
+
+      <StudentRegistrationModal
+        open={regOpen}
+        onClose={() => setRegOpen(false)}
+        showBranchPicker={!branch}
+        branchId={branch ? branchId : undefined}
+        onRegistered={(r) => {
+          syncRegistered(r);
+          onRegistered?.(r);
+        }}
+      />
 
       <Input
         value={q}
@@ -201,19 +263,19 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
       />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
-        <div className="overflow-x-auto rounded-lg bg-surface shadow-[var(--shadow-border)]">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border text-xs text-fg-muted">
+        <div className="overflow-x-auto am-card">
+          <table className="am-table">
+            <thead>
               <tr>
-                <th className="px-3 py-3 text-right font-medium">الاسم</th>
-                <th className="px-3 py-3 text-right font-medium">الجنس</th>
-                <th className="px-3 py-3 text-right font-medium">الصف</th>
-                <th className="px-3 py-3 text-right font-medium">تاريخ الميلاد</th>
-                <th className="px-3 py-3 text-right font-medium">ولي الأمر</th>
-                {!registrar ? (
-                  <th className="px-3 py-3 text-right font-medium">الرسوم</th>
+                <th>الاسم</th>
+                <th>الجنس</th>
+                <th>الصف</th>
+                <th>تاريخ الميلاد</th>
+                <th>ولي الأمر</th>
+                {!registrar && !branch ? (
+                  <th>الرسوم</th>
                 ) : null}
-                <th className="px-3 py-3 text-right font-medium">إجراءات</th>
+                <th>إجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -245,7 +307,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                       ) : null}
                     </td>
                     <td className="px-3 py-3 text-fg-muted">{s.parentAr}</td>
-                    {!registrar ? (
+                    {!registrar && !branch ? (
                       <td className="px-3 py-3">
                         <Badge tone={done ? "ok" : paid > 0 ? "warn" : "bad"}>
                           {done ? "مسدد" : paid > 0 ? "جزئي" : "غير مسدد"}
@@ -260,9 +322,11 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                         <Button size="sm" variant="ghost" onClick={() => handleEdit(s.id)}>
                           تعديل
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(s.id)}>
-                          حذف
-                        </Button>
+                        {!branch ? (
+                          <Button size="sm" variant="ghost" onClick={() => handleDelete(s.id)}>
+                            حذف
+                          </Button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -273,7 +337,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
         </div>
 
         {current ? (
-          <aside className="rounded-lg bg-surface p-4 shadow-[var(--shadow-border)]">
+          <aside className="am-card p-4">
             <p className="text-xs text-fg-subtle">ملف الطالب</p>
             <h2 className="mt-1 text-lg font-semibold">{current.nameAr}</h2>
             <p className="text-sm text-fg-muted">{current.nameFr}</p>
@@ -285,7 +349,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
               <Row k="ولي الأمر" v={current.parentAr} />
               <Row k="الهاتف" v={current.phone} />
               <Row k="تاريخ القيد" v={current.enrolled} />
-              {!registrar ? (
+              {!registrar && !branch ? (
                 <>
                   <Row k="الرسوم السنوية" v={money(current.annualFee)} />
                   <Row k="المحصّل" v={money(paidOf(current.id))} />
@@ -310,7 +374,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                   طباعة قائمة الفصل
                 </Button>
               ) : null}
-              {registrar ? (
+              {registrar || branch ? (
                 <>
                   <Button
                     size="sm"
@@ -324,12 +388,12 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                   <div className="grid gap-1">
                     <Label className="text-xs">تحويل الصف</Label>
                     <select
-                      className="h-9 rounded-md bg-surface px-2 text-xs shadow-[var(--shadow-border)]"
+                      className="am-input h-9 min-h-0 px-2 text-xs"
                       value={transferClassId}
                       onChange={(e) => {
                         const cid = e.target.value;
                         setTransferClassId(cid);
-                        const cls = classes.find((c) => c.id === cid);
+                        const cls = branchClasses.find((c) => c.id === cid);
                         if (cls) {
                           editStudent(current.id, { classId: cls.id, klass: cls.nameAr });
                           void writeAuditEntry({
@@ -343,9 +407,9 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                       }}
                       aria-label="تحويل الصف"
                     >
-                      <option value="">— اختر الصف —</option>
-                      {classes
-                        .filter((c) => c.active)
+                        <option value="">— اختر الصف —</option>
+                        {branchClasses
+                          .filter((c) => c.active)
                         .map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.nameAr}
@@ -408,7 +472,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                 <>
                   <div className="flex gap-2">
                     <select
-                      className="h-9 flex-1 rounded-md bg-surface px-2 text-xs shadow-[var(--shadow-border)]"
+                      className="am-input h-9 min-h-0 flex-1 px-2 text-xs"
                       value={bulletinTermId || terms.filter((t) => t.active).sort((a, b) => a.order - b.order).at(-1)?.id || ""}
                       onChange={(e) => setBulletinTermId(e.target.value)}
                       aria-label="الفصل الدراسي للكشف"
@@ -451,7 +515,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                   </Button>
                   {payOpen ? (
                     <form
-                      className="grid gap-2 rounded-md bg-bg p-3 shadow-[var(--shadow-border)]"
+                      className="grid gap-2 rounded-md border border-primary/10 bg-bg p-3"
                       onSubmit={(e) => {
                         e.preventDefault();
                         const amount = Number(payAmount) || 0;
@@ -498,7 +562,7 @@ export function StudentsView({ mode = "full" }: { mode?: "full" | "registrar" } 
                 </>
               )}
             </div>
-            {!registrar && terms.length > 0 ? (
+            {!registrar && !branch && terms.length > 0 ? (
               <div className="mt-4 border-t border-border pt-4">
                 <p className="text-xs text-fg-subtle">آخر فصل دراسي</p>
                 {(() => {
@@ -635,7 +699,7 @@ function StudentForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-3 rounded-lg bg-surface p-4 shadow-[var(--shadow-border)] sm:grid-cols-2">
+    <form onSubmit={submit} className="grid gap-3 am-card p-4 sm:grid-cols-2">
       <Field label="الاسم بالعربية">
         <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} required />
       </Field>
@@ -643,7 +707,7 @@ function StudentForm({
         <Input value={nameFr} onChange={(e) => setNameFr(e.target.value)} />
       </Field>
       <Field label="الجنس">
-        <div className="flex h-11 items-center gap-4 rounded-md bg-surface px-3 shadow-[var(--shadow-border)]">
+        <div className="am-input flex items-center gap-4">
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="radio"
@@ -670,7 +734,7 @@ function StudentForm({
       </Field>
       <Field label="الصف">
         <select
-          className="flex h-11 w-full rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="flex h-11 w-full am-input"
           value={classId}
           onChange={(e) => {
             setClassId(e.target.value);

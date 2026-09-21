@@ -33,6 +33,7 @@ export function LoginForm({ initialRedirect }: { initialRedirect?: string }) {
       staff: ["/app/staff", "/app/branch", "/app/registrar", "/app/accountant", "/app/academic", "/app/supervisor"],
       teacher: ["/app/teacher"],
       student: ["/app/student"],
+      parent: ["/app/parent"],
     };
     if (allowed[role].includes(initialRedirect)) return initialRedirect;
     return fallback;

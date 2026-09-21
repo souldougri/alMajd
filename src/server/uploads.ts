@@ -9,6 +9,7 @@
  */
 import { existsSync, mkdirSync } from "node:fs";
 import { extname, join } from "node:path";
+import { ApiError } from "./http";
 
 export const UPLOADS_ROOT = join(process.cwd(), ".data", "uploads");
 export const SITE_MEDIA_DIR = join(UPLOADS_ROOT, "site");
@@ -43,25 +44,26 @@ export function docFilePath(storedName: string): string {
 
 /**
  * Validates a filename's extension and size, returning the normalized MIME.
- * Throws with an Arabic, user-facing message on failure.
+ * Throws ApiError (surfaced as a clear 4xx to the caller, never a generic
+ * server 500) with an Arabic, user-facing message on failure.
  */
 export function validateUpload(
   filename: string,
   byteLength: number,
 ): { ext: string; mime: string } {
   if (!filename || !filename.includes(".")) {
-    throw new Error("نوع الملف غير مدعوم. الملفات المسموحة: PDF / JPG / PNG / WEBP");
+    throw new ApiError("نوع الملف غير مدعوم. الملفات المسموحة: PDF / JPG / PNG / WEBP");
   }
   const ext = extname(filename).toLowerCase();
   const mime = ALLOWED_UPLOAD_TYPES[ext];
   if (!mime) {
-    throw new Error("نوع الملف غير مدعوم. الملفات المسموحة: PDF / JPG / PNG / WEBP.");
+    throw new ApiError("نوع الملف غير مدعوم. الملفات المسموحة: PDF / JPG / PNG / WEBP.");
   }
   if (byteLength <= 0) {
-    throw new Error("الملف فارغ");
+    throw new ApiError("الملف فارغ");
   }
   if (byteLength > MAX_UPLOAD_BYTES) {
-    throw new Error(`حجم الملف يتجاوز الحد الأقصى المسموح (10 MB)`);
+    throw new ApiError(`حجم الملف يتجاوز الحد الأقصى المسموح (10 MB)`);
   }
   return { ext, mime };
 }

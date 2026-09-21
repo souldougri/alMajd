@@ -45,7 +45,7 @@ type SchoolState = {
   setView: (view: ViewId) => void;
   select: (id: string | null) => void;
   setSchoolYear: (year: string) => void;
-  addStudent: (s: Omit<Student, "id">) => Student;
+  addStudent: (s: Omit<Student, "id"> & { id?: string }) => Student;
   editStudent: (id: string, updates: Partial<Omit<Student, "id">>) => void;
   deleteStudent: (id: string) => void;
   addClass: (c: Omit<ClassSection, "id">) => void;
@@ -64,7 +64,7 @@ type SchoolState = {
   paidOf: (studentId: string) => number;
   addFeeType: (f: Omit<FeeType, "id">) => void;
   deleteFeeType: (id: string) => void;
-  addExpense: (e: Omit<Expense, "id">) => void;
+  addExpense: (e: Omit<Expense, "id">) => string;
   deleteExpense: (id: string) => void;
   addTerm: (t: Omit<Term, "id">) => void;
   editTerm: (id: string, updates: Partial<Omit<Term, "id">>) => void;
@@ -193,7 +193,7 @@ export const useSchool = create<SchoolState>()(
           return { schoolYear: year };
         }),
       addStudent: (s) => {
-        const id = uid("s");
+        const id = s.id ?? uid("s");
         const student = { ...s, id };
         set((st) => {
           const nextStudents = [student, ...st.students];
@@ -391,15 +391,18 @@ export const useSchool = create<SchoolState>()(
           syncToStorage({ ...st, feeTypes: nextFeeTypes });
           return { feeTypes: nextFeeTypes };
         }),
-      addExpense: (e) =>
+      addExpense: (e) => {
+        const id = uid("ex");
         set((st) => {
           const nextExpenses = [
-            { ...e, date: e.date || todayIso(), id: uid("ex") },
+            { ...e, date: e.date || todayIso(), id },
             ...st.expenses,
           ];
           syncToStorage({ ...st, expenses: nextExpenses });
           return { expenses: nextExpenses };
-        }),
+        });
+        return id;
+      },
       deleteExpense: (id) =>
         set((st) => {
           const nextExpenses = st.expenses.filter((e) => e.id !== id);

@@ -42,7 +42,7 @@ function cloneSettings(s: SiteSettings): SiteSettings {
 
 function Section({ title, desc, children }: { title: string; desc?: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
+    <section className="am-card p-5 shadow-sm">
       <h2 className="font-bold text-navy">{title}</h2>
       {desc ? <p className="mt-0.5 text-xs text-navy/50">{desc}</p> : null}
       <div className="mt-4 space-y-4">{children}</div>

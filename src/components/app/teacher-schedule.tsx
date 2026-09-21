@@ -48,7 +48,7 @@ export function TeacherSchedule({ portfolio }: { portfolio: TeacherPortfolio | n
   return (
     <section className="mt-6 space-y-6">
       {/* الفصول المسؤول عنها — head-of-class classes */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
+      <div className="am-card p-4">
         <h3 className="flex items-center gap-2 font-display text-base font-bold">
           <UserRoundCheck className="size-5 text-gold" />
           الفصول المسؤول عنها
@@ -76,7 +76,7 @@ export function TeacherSchedule({ portfolio }: { portfolio: TeacherPortfolio | n
       </div>
 
       {/* Weekly timetable — restricted to this teacher's own subjects */}
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
+      <div className="am-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="flex items-center gap-2 font-display text-base font-bold">
             <CalendarDays className="size-5 text-gold" />

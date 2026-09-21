@@ -195,7 +195,8 @@ export async function getTeacherPortfolioRelational(user: SafeUser): Promise<Tea
 
   // 6. Get classes the teacher teaches (head teacher OR has teaching assignment)
   // We need to also include classes where teacher is head_teacher_user_id but may not have teaching_assignments
-  const placeholders = classIds.map((_, i) => `$${i + 1}`).join(",");
+  // NOTE: array parameter (see grades query below) — a single-element
+  // `IN ($1)` leaves Postgres unable to infer the type (42P18).
   const classesResult = await db.query(
     `SELECT c.id, c.branch_id, b.name_ar AS branch_name_ar, c.academic_year_id, ay.label AS year_label,
             c.name_ar, c.name_fr, c.level, c.section, c.capacity, c.head_teacher_user_id,
@@ -204,9 +205,9 @@ export async function getTeacherPortfolioRelational(user: SafeUser): Promise<Tea
      JOIN branches b ON b.id = c.branch_id
      JOIN academic_years ay ON ay.id = c.academic_year_id
      LEFT JOIN users hu ON hu.id = c.head_teacher_user_id
-     WHERE c.id IN (${placeholders}) AND c.active = true
+     WHERE c.id = ANY($1::text[]) AND c.active = true
      ORDER BY c.name_ar ASC`,
-    classIds,
+    [classIds],
   );
   const classes = classesResult.rows.map(toTeacherClass);
 
@@ -271,68 +272,22 @@ export async function getTeacherPortfolioRelational(user: SafeUser): Promise<Tea
       ? allTimetable
       : allTimetable.filter((t) => teacherSubjectIds.has(t.subjectId));
 
-    // Get grades for this teacher's subjects in this class
-    // We need to get assessments for the current academic year's terms
+    // Grades for this teacher's subjects in this class, in one joined query.
+    // NOTE: array parameters (`= ANY($n::text[])`) are used instead of a
+    // hand-rolled `IN ($n, ...)` list: a single-element `IN ($n)` leaves
+    // Postgres unable to infer the parameter type (42P18), which 500'd every
+    // teacher portfolio.
     const subjectIds = subjects.map((s) => s.id);
     let grades: Array<{ id: string; studentId: string; subjectId: string; termId: string; score: number; maxScore: number; date?: string; note?: string }> = [];
 
-    if (subjectIds.length > 0) {
-      const studentIds = students.map((s) => s.id);
-      if (studentIds.length > 0) {
-        // Get assessments for these subjects in this class
-        const subjectPlaceholders = subjectIds.map((_, i) => `$${i + 2}`).join(",");
-        const assessmentsResult = await db.query(
-          `SELECT a.id, a.class_id, a.subject_id, a.term_id, a.max_score, a.date
-           FROM assessments a
-           WHERE a.class_id = $1 AND a.subject_id IN (${subjectPlaceholders})`,
-          [cls.id, ...subjectIds],
-        );
-        const assessmentIds = assessmentsResult.rows.map((r) => String(r.id));
-        const assessmentMap = new Map(assessmentsResult.rows.map((r) => [String(r.id), { termId: String(r.term_id), maxScore: Number(r.max_score ?? 20), date: r.date ? String(r.date) : undefined }]));
-
-        if (assessmentIds.length > 0) {
-          const assessmentPlaceholders = assessmentIds.map((_, i) => `$${i + 2}`).join(",");
-          const studentPlaceholders = studentIds.map((_, i) => `$${i + 2 + assessmentIds.length}`).join(",");
-          const gradesResult = await db.query(
-            `SELECT g.id, g.student_id, g.assessment_id, g.score, g.note
-             FROM grades g
-             WHERE g.assessment_id IN (${assessmentPlaceholders}) AND g.student_id IN (${studentPlaceholders})`,
-            [...assessmentIds, ...studentIds],
-          );
-          grades = gradesResult.rows.map((r) => {
-            const assessment = assessmentMap.get(String(r.assessment_id));
-            return {
-              id: String(r.id),
-              studentId: String(r.student_id),
-              subjectId: assessment ? "" : "", // We'll need to join to get subjectId
-              termId: assessment?.termId ?? "",
-              score: Number(r.score),
-              maxScore: assessment?.maxScore ?? 20,
-              date: assessment?.date,
-              note: r.note ? String(r.note) : undefined,
-            };
-          });
-          // Fill in subjectId from assessment
-          const assessmentSubjectMap = new Map(assessmentsResult.rows.map((r) => [String(r.id), String(r.subject_id)]));
-          for (const g of grades) {
-            const assessment = assessmentsResult.rows.find((r) => String(r.id) === g.id); // This won't work since we don't have assessmentId in grade
-            // Better: re-query with subject_id
-          }
-        }
-      }
-    }
-
-    // Re-query grades with subject_id properly
     if (subjectIds.length > 0 && students.length > 0) {
-      const subjectPlaceholders = subjectIds.map((_, i) => `$${i + 3}`).join(",");
-      const studentPlaceholders = students.map((_, i) => `$${i + 3 + subjectIds.length}`).join(",");
       const gradesResult = await db.query(
         `SELECT g.id, g.student_id, a.subject_id, a.term_id, g.score, a.max_score, a.date, g.note
          FROM grades g
          JOIN assessments a ON a.id = g.assessment_id
-         WHERE a.class_id = $1 AND a.subject_id IN (${subjectPlaceholders}) AND g.student_id IN (${studentPlaceholders})
+         WHERE a.class_id = $1 AND a.subject_id = ANY($2::text[]) AND g.student_id = ANY($3::text[])
          ORDER BY a.term_id ASC, a.subject_id ASC`,
-        [cls.id, ...subjectIds, ...students.map((s) => s.id)],
+        [cls.id, subjectIds, students.map((s) => s.id)],
       );
       grades = gradesResult.rows.map((r) => ({
         id: String(r.id),

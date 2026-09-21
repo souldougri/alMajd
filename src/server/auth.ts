@@ -8,6 +8,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { compareSync, hashSync } from "bcryptjs";
 import { getDb, type DbRow } from "./db";
 import { ApiError, readCookie, SESSION_COOKIE, sessionDurationSeconds } from "./http";
+import { requireBranchHeadOrAdmin } from "./scope";
 import { parseDuties, ROLE_LABELS, type Role, type SafeUser, type StaffDuty, type User } from "@/lib/auth/types";
 
 const COST = 10;
@@ -41,6 +42,7 @@ export function toSafeUser(row: DbRow): SafeUser {
     active: Boolean(row.active),
     staffId: row.staff_id ? String(row.staff_id) : undefined,
     studentId: row.student_id ? String(row.student_id) : undefined,
+    parentStudentId: row.parent_student_id ? String(row.parent_student_id) : undefined,
     duties: parseDuties(row.duties ? String(row.duties) : ""),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -58,6 +60,7 @@ function toUserWithPassword(row: DbRow): User & { passwordHash: string } {
     active: Boolean(row.active),
     staffId: row.staff_id ? String(row.staff_id) : undefined,
     studentId: row.student_id ? String(row.student_id) : undefined,
+    parentStudentId: row.parent_student_id ? String(row.parent_student_id) : undefined,
     duties: parseDuties(row.duties ? String(row.duties) : ""),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -156,6 +159,23 @@ export async function requireRegistrarOrAdminFromRequest(request: Request): Prom
   return user;
 }
 
+/**
+ * Authorizes the bound-student-login path (create/refresh a portal login for
+ * an EXISTING student record): super_admin, registrar-duty staff, or the
+ * active Branch Head of the student's own branch. General user creation is
+ * never granted here — heads stay confined to students already in their
+ * branch (the record must exist; its branch is authoritative).
+ */
+export async function assertBoundStudentLoginAuthority(actor: SafeUser, studentId: string): Promise<void> {
+  if (actor.role === "super_admin" || actor.duties.includes("registrar")) return;
+  const db = await getDb();
+  const row = await db.query("SELECT branch_id FROM students WHERE id = $1 LIMIT 1", [studentId]);
+  if (row.rows.length === 0) {
+    throw new ApiError("الطالب غير موجود", 404);
+  }
+  await requireBranchHeadOrAdmin(actor, String(row.rows[0].branch_id));
+}
+
 export async function requireTeacherFromRequest(request: Request): Promise<SafeUser> {
   const user = await requireUserFromRequest(request);
   if (user.role !== "teacher") {
@@ -170,6 +190,33 @@ export async function requireStudentFromRequest(request: Request): Promise<SafeU
     throw new ApiError("غير مصرح لك — هذه العملية تتطلب حسابات الطلاب فقط", 403);
   }
   return user;
+}
+
+export async function requireParentFromRequest(request: Request): Promise<SafeUser> {
+  const user = await requireUserFromRequest(request);
+  if (user.role !== "parent") {
+    throw new ApiError("غير مصرح لك — هذه العملية تتطلب حسابات أولياء الأمور فقط", 403);
+  }
+  return user;
+}
+
+/**
+ * Resolves the single student a parent account is bound to, always fresh
+ * from the database — the client-supplied studentId is never trusted.
+ * Throws 404 when the account has no linked student, so parent endpoints
+ * fail closed.
+ */
+export async function resolveParentStudentId(parentUserId: string): Promise<string> {
+  const db = await getDb();
+  const row = await db.query(
+    "SELECT parent_student_id FROM users WHERE id = $1 AND role = 'parent' LIMIT 1",
+    [parentUserId],
+  );
+  const linked = row.rows[0]?.parent_student_id ? String(row.rows[0].parent_student_id) : "";
+  if (!linked) {
+    throw new ApiError("حساب ولي الأمر غير مرتبط بأي طالب", 404);
+  }
+  return linked;
 }
 
 // ---------------------------------------------------------------------------
@@ -518,6 +565,125 @@ export async function upsertStudentUserServer(input: StudentLoginInput, actor: S
   return { user: safe, email: safe.email, password, created: true };
 }
 
+export type ParentLoginResult = {
+  user: SafeUser;
+  /** The effective login id (email) for the parent portal. */
+  email: string;
+  /** Effective password only when it was just created or reset; "" otherwise. */
+  password: string;
+  /** true when a brand-new bound login was created. */
+  created: boolean;
+};
+
+export type ParentLoginInput = {
+  nameAr: string;
+  /** Optional personal email; when omitted a generated login id is used. */
+  email?: string;
+  /** Optional new password; preserved when omitted for an existing login. */
+  initialPassword?: string;
+  studentId: string;
+  active?: boolean;
+};
+
+/**
+ * Parent login id generator. Same philosophy as student logins: a
+ * deterministic base from the parent's name plus database collision
+ * detection, sharing the global users.email uniqueness. No phone-as-username
+ * (phones are not unique in this system).
+ */
+export async function uniqueParentLoginId(parentNameAr: string): Promise<string> {
+  return uniqueStudentLoginId("", parentNameAr);
+}
+
+/**
+ * Idempotent bound-parent login (one parent account ↔ one student, enforced
+ * by UNIQUE(users.parent_student_id)). Mirrors upsertStudentUserServer:
+ * creating the link is enough for that parent to access the portal; an
+ * existing link is refreshed, never duplicated. Passwords are hashed only —
+ * the plaintext is returned solely at creation/reset time.
+ */
+export async function upsertParentUserServer(input: ParentLoginInput, actor: SafeUser): Promise<ParentLoginResult> {
+  const db = await getDb();
+  if (!input.studentId?.trim() || !input.nameAr.trim()) {
+    throw new ApiError("بيانات ولي الأمر غير مكتملة", 400);
+  }
+
+  const studentId = input.studentId.trim();
+  const requestedPassword = input.initialPassword && input.initialPassword.length >= 6 ? input.initialPassword : "";
+  const now = new Date().toISOString();
+
+  const existing = await db.query("SELECT * FROM users WHERE parent_student_id = $1 LIMIT 1", [studentId]);
+  if (existing.rows.length > 0) {
+    const row = existing.rows[0];
+    const id = String(row.id);
+    const currentEmail = String(row.email);
+    const requestedEmail = input.email?.trim() ? normalizeEmail(input.email) : currentEmail;
+    if (requestedEmail !== currentEmail) {
+      const clash = await db.query("SELECT id FROM users WHERE email = $1 AND id != $2", [requestedEmail, id]);
+      if (clash.rows.length > 0) {
+        throw new ApiError("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل");
+      }
+    }
+    const nextNameAr = input.nameAr.trim();
+    await db.query(
+      "UPDATE users SET email = $1, name_ar = $2, active = $3, updated_at = $4 WHERE id = $5",
+      [requestedEmail, nextNameAr, input.active ?? true, now, id],
+    );
+    if (requestedPassword) {
+      await db.query("UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3", [hashPassword(requestedPassword), now, id]);
+      await writeAudit({
+        action: "user.reset_password",
+        actorId: actor.id,
+        actorName: actor.nameAr,
+        targetId: id,
+        targetName: nextNameAr,
+        detail: "password reset via parent login",
+      });
+    }
+    const freshRows = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+    return { user: toSafeUser(freshRows.rows[0]), email: requestedEmail, password: requestedPassword, created: false };
+  }
+
+  const email = input.email?.trim()
+    ? normalizeEmail(input.email)
+    : await uniqueParentLoginId(input.nameAr);
+  const existingEmail = await db.query("SELECT id FROM users WHERE email = $1", [email]);
+  if (existingEmail.rows.length > 0) {
+    throw new ApiError("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل");
+  }
+
+  // Every new parent gets a unique generated password — never a shared default.
+  const password = requestedPassword || generateStudentPassword();
+  const id = uid("usr");
+  const nameAr = input.nameAr.trim();
+  await db.query(
+    `INSERT INTO users (id, email, name_ar, name_en, role, password_hash, active, parent_student_id, duties, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '', $9, $9)`,
+    [id, email, nameAr, nameAr, "parent", hashPassword(password), input.active ?? true, studentId, now],
+  );
+  await writeAudit({
+    action: "parent.register",
+    actorId: actor.id,
+    actorName: actor.nameAr,
+    targetId: id,
+    targetName: nameAr,
+    detail: `parent registered with login ${email}`,
+  });
+  const safe = toSafeUser({
+    id,
+    email,
+    name_ar: nameAr,
+    name_en: nameAr,
+    role: "parent",
+    active: input.active ?? true,
+    parent_student_id: studentId,
+    duties: "",
+    created_at: now,
+    updated_at: now,
+  });
+  return { user: safe, email: safe.email, password, created: true };
+}
+
 export async function updateUserServer(id: string, updates: UpdateUserInput, actor: SafeUser): Promise<SafeUser> {
   const db = await getDb();
   const current = await findUserById(id);
@@ -724,6 +890,7 @@ export type AuditAction =
   | "financial_officer.assign"
   | "financial_officer.remove"
   | "student.register"
+  | "parent.register"
   | "student.update"
   | "student.delete"
   | "student.transfer"

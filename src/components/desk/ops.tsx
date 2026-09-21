@@ -29,10 +29,10 @@ export function AttendanceView() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-display text-3xl font-bold text-primary">المتابعة — الحضور</h1>
+        <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">المتابعة — الحضور</h1>
         <p className="text-sm text-fg-muted">تحضير يوم {date}</p>
       </div>
-      <div className="overflow-hidden rounded-lg bg-surface shadow-[var(--shadow-border)]">
+      <div className="overflow-hidden am-card">
         <ul className="divide-y divide-border">
           {students.map((s) => {
             const st = day[s.id] ?? "present";
@@ -99,12 +99,12 @@ export function FeesView() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-display text-3xl font-bold text-primary">إدارة الرسوم</h1>
+        <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">إدارة الرسوم</h1>
         <p className="text-sm text-fg-muted">Frais de scolarité · {SCHOOL.currency}</p>
       </div>
 
       <form
-        className="grid gap-3 rounded-lg bg-surface p-4 shadow-[var(--shadow-border)] sm:grid-cols-4"
+        className="grid gap-3 am-card p-4 sm:grid-cols-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!sid) return;
@@ -124,7 +124,7 @@ export function FeesView() {
         <div className="sm:col-span-4">
           <Label>نوع الرسوم</Label>
           <select
-            className="mt-1.5 h-11 w-full rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+            className="mt-1.5 h-11 w-full am-input"
             value={ftId}
             onChange={(e) => {
               setFtId(e.target.value);
@@ -147,7 +147,7 @@ export function FeesView() {
           <Label>الطالب</Label>
           <div className="flex gap-2">
             <select
-              className="h-11 flex-1 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+              className="h-11 flex-1 am-input"
               value={classId}
               onChange={(e) => {
                 setClassId(e.target.value);
@@ -168,7 +168,7 @@ export function FeesView() {
                 ))}
             </select>
             <select
-              className="h-11 flex-1 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+              className="h-11 flex-1 am-input"
               value={sid}
               onChange={(e) => setSid(e.target.value)}
             >
@@ -205,15 +205,15 @@ export function FeesView() {
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-lg bg-surface shadow-[var(--shadow-border)]">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border text-xs text-fg-muted">
+      <div className="overflow-x-auto am-card">
+        <table className="am-table">
+          <thead>
             <tr>
-              <th className="px-3 py-3 text-right font-medium">التاريخ</th>
-              <th className="px-3 py-3 text-right font-medium">الطالب</th>
-              <th className="px-3 py-3 text-right font-medium">البيان</th>
-              <th className="px-3 py-3 text-right font-medium">المبلغ</th>
-              <th className="px-3 py-3 text-right font-medium">إجراءات</th>
+              <th>التاريخ</th>
+              <th>الطالب</th>
+              <th>البيان</th>
+              <th>المبلغ</th>
+              <th>إجراءات</th>
             </tr>
           </thead>
           <tbody>
@@ -250,7 +250,7 @@ export function CardsView() {
     <div className="space-y-4">
       <div className="no-print flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary">البطاقات المدرسية</h1>
+          <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">البطاقات المدرسية</h1>
           <p className="text-sm text-fg-muted">Cartes d'identité scolaires</p>
         </div>
         <Button onClick={() => void printOrExportPdf({ rootSelector: "#print-card", filename: "school-id-card.pdf" })}>
@@ -260,7 +260,7 @@ export function CardsView() {
       <div className="no-print">
         <Label>اختر الطالب</Label>
         <select
-          className="mt-1.5 h-11 max-w-md rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="mt-1.5 h-11 max-w-md am-input"
           value={s?.id}
           onChange={(e) => select(e.target.value)}
         >
@@ -353,7 +353,7 @@ export function CertificatesView() {
     <div className="space-y-4">
       <div className="no-print flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary">الشهادات والكشوف</h1>
+          <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">الشهادات والكشوف</h1>
           <p className="text-sm text-fg-muted">Attestations officielles</p>
         </div>
         <Button onClick={() => void printOrExportPdf({ rootSelector: "#print-certificate", filename: "certificate.pdf" })}>
@@ -362,7 +362,7 @@ export function CertificatesView() {
       </div>
       <div className="no-print flex flex-wrap gap-3">
         <select
-          className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="h-11 am-input"
           value={s?.id}
           onChange={(e) => select(e.target.value)}
         >
@@ -373,7 +373,7 @@ export function CertificatesView() {
           ))}
         </select>
         <select
-          className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="h-11 am-input"
           value={kind}
           onChange={(e) => setKind(e.target.value as CertKind)}
         >
@@ -442,11 +442,11 @@ export function WarningsView() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-display text-3xl font-bold text-primary">الإنذارات</h1>
+        <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">الإنذارات</h1>
         <p className="text-sm text-fg-muted">Avertissements et suivi disciplinaire</p>
       </div>
       <form
-        className="grid gap-3 rounded-lg bg-surface p-4 shadow-[var(--shadow-border)]"
+        className="grid gap-3 am-card p-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!body.trim()) return;
@@ -463,7 +463,7 @@ export function WarningsView() {
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <select
-            className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+            className="h-11 am-input"
             value={sid}
             onChange={(e) => setSid(e.target.value)}
           >
@@ -474,7 +474,7 @@ export function WarningsView() {
             ))}
           </select>
           <select
-            className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+            className="h-11 am-input"
             value={kind}
             onChange={(e) => setKind(e.target.value as WarningKind)}
           >
@@ -490,7 +490,7 @@ export function WarningsView() {
       </form>
       <ul className="space-y-2">
         {list.map((w) => (
-          <li key={w.id} className="rounded-lg bg-surface p-4 shadow-[var(--shadow-border)]">
+          <li key={w.id} className="am-card p-4">
             <div className="mb-1 flex items-center justify-between gap-2">
               <p className="font-medium">{w.name}</p>
               <Badge tone="bad">{warnLabel[w.kind]}</Badge>
@@ -561,7 +561,7 @@ export function ClassesView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary">الفصول الدراسية</h1>
+          <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">الفصول الدراسية</h1>
           <p className="text-sm text-fg-muted">إدارة الفصول · Classes</p>
         </div>
         <Button onClick={() => { setEditingId(null); setOpen((v) => !v); }}>
@@ -592,16 +592,16 @@ export function ClassesView() {
         />
       ) : null}
 
-      <div className="overflow-x-auto rounded-lg bg-surface shadow-[var(--shadow-border)]">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border text-xs text-fg-muted">
+      <div className="overflow-x-auto am-card">
+        <table className="am-table">
+          <thead>
             <tr>
-              <th className="px-3 py-3 text-right font-medium">اسم الفصل</th>
-              <th className="px-3 py-3 text-right font-medium">المستوى</th>
-              <th className="px-3 py-3 text-right font-medium">السعة</th>
-              <th className="px-3 py-3 text-right font-medium">الطلاب</th>
-              <th className="px-3 py-3 text-right font-medium">الحالة</th>
-              <th className="px-3 py-3 text-right font-medium">إجراءات</th>
+              <th>اسم الفصل</th>
+              <th>المستوى</th>
+              <th>السعة</th>
+              <th>الطلاب</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
             </tr>
           </thead>
           <tbody>
@@ -702,7 +702,7 @@ function ClassForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-3 rounded-lg bg-surface p-4 shadow-[var(--shadow-border)] sm:grid-cols-2">
+    <form onSubmit={submit} className="grid gap-3 am-card p-4 sm:grid-cols-2">
       <Field label="اسم الفصل (عربي)">
         <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} required />
       </Field>
@@ -717,7 +717,7 @@ function ClassForm({
       </Field>
       <Field label="المعلم المسؤول">
         <select
-          className="h-11 w-full rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="h-11 w-full am-input"
           value={teacherStaffId}
           onChange={(e) => setTeacherStaffId(e.target.value)}
           disabled={teachersLoading}
@@ -746,7 +746,7 @@ function ClassForm({
       </Field>
       <Field label="الحالة">
         <select
-          className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="h-11 am-input"
           value={active ? "true" : "false"}
           onChange={(e) => setActive(e.target.value === "true")}
         >
@@ -816,7 +816,7 @@ export function SubjectsView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary">المواد الدراسية</h1>
+          <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">المواد الدراسية</h1>
           <p className="text-sm text-fg-muted">إدارة المواد · Subjects</p>
         </div>
         <Button onClick={() => { setEditingId(null); setOpen((v) => !v); }}>
@@ -848,17 +848,17 @@ export function SubjectsView() {
         />
       ) : null}
 
-      <div className="overflow-x-auto rounded-lg bg-surface shadow-[var(--shadow-border)]">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border text-xs text-fg-muted">
+      <div className="overflow-x-auto am-card">
+        <table className="am-table">
+          <thead>
             <tr>
-              <th className="px-3 py-3 text-right font-medium">اسم المادة</th>
-              <th className="px-3 py-3 text-right font-medium">الفصل</th>
-              <th className="px-3 py-3 text-right font-medium">المعلم</th>
-              <th className="px-3 py-3 text-right font-medium">المعامل</th>
-              <th className="px-3 py-3 text-right font-medium">أقصى علامة</th>
-              <th className="px-3 py-3 text-right font-medium">الحالة</th>
-              <th className="px-3 py-3 text-right font-medium">إجراءات</th>
+              <th>اسم المادة</th>
+              <th>الفصل</th>
+              <th>المعلم</th>
+              <th>المعامل</th>
+              <th>أقصى علامة</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
             </tr>
           </thead>
           <tbody>
@@ -962,7 +962,7 @@ function SubjectForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-3 rounded-lg bg-surface p-4 shadow-[var(--shadow-border)] sm:grid-cols-2">
+    <form onSubmit={submit} className="grid gap-3 am-card p-4 sm:grid-cols-2">
       <Field label="اسم المادة (عربي)">
         <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} required />
       </Field>
@@ -974,7 +974,7 @@ function SubjectForm({
       </Field>
       <Field label="الفصل">
         <select
-          className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="h-11 am-input"
           value={classId}
           onChange={(e) => setClassId(e.target.value)}
         >
@@ -988,7 +988,7 @@ function SubjectForm({
       </Field>
       <Field label="المعلم">
         <select
-          className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="h-11 am-input"
           value={teacherStaffId}
           onChange={(e) => setTeacherStaffId(e.target.value)}
           disabled={teachersLoading}
@@ -1020,7 +1020,7 @@ function SubjectForm({
       </Field>
       <Field label="الحالة">
         <select
-          className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+          className="h-11 am-input"
           value={active ? "true" : "false"}
           onChange={(e) => setActive(e.target.value === "true")}
         >
@@ -1143,14 +1143,14 @@ export function GradesView() {
     return (
       <div className="space-y-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary">الدرجات</h1>
+          <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">الدرجات</h1>
           <p className="text-sm text-fg-muted">إدارة الدرجات · Notes</p>
         </div>
-        <div className="grid gap-3 rounded-lg bg-surface p-4 shadow-[var(--shadow-border)] sm:grid-cols-2">
+        <div className="grid gap-3 am-card p-4 sm:grid-cols-2">
           <div className="grid gap-1.5">
             <Label>الفصل</Label>
             <select
-              className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+              className="h-11 am-input"
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
             >
@@ -1165,7 +1165,7 @@ export function GradesView() {
           <div className="grid gap-1.5">
             <Label>الفصل الدراسي</Label>
             <select
-              className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+              className="h-11 am-input"
               value={selectedTermId}
               onChange={(e) => setSelectedTermId(e.target.value)}
             >
@@ -1186,12 +1186,12 @@ export function GradesView() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary">الدرجات</h1>
+          <h1 className="font-display text-2xl font-bold text-primary sm:text-3xl">الدرجات</h1>
           <p className="text-sm text-fg-muted">إدارة الدرجات · Notes</p>
         </div>
         <div className="flex gap-2">
           <select
-            className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+            className="h-11 am-input"
             value={selectedClassId}
             onChange={(e) => setSelectedClassId(e.target.value)}
           >
@@ -1202,7 +1202,7 @@ export function GradesView() {
             ))}
           </select>
           <select
-            className="h-11 rounded-md bg-surface px-3 text-sm shadow-[var(--shadow-border)]"
+            className="h-11 am-input"
             value={selectedTermId}
             onChange={(e) => setSelectedTermId(e.target.value)}
           >
@@ -1251,11 +1251,11 @@ export function GradesView() {
           لا توجد مواد لهذا الفصل. أضف المواد أولاً من صف المواد.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg bg-surface shadow-[var(--shadow-border)]">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border text-xs text-fg-muted">
+        <div className="overflow-x-auto am-card">
+          <table className="am-table">
+            <thead>
               <tr>
-                <th className="px-3 py-3 text-right font-medium">الطالب</th>
+                <th>الطالب</th>
                 {classSubjects.map((subject) => (
                   <th key={subject.id} className="px-3 py-3 text-right font-medium">
                     {subject.nameAr}
@@ -1264,10 +1264,10 @@ export function GradesView() {
                     </span>
                   </th>
                 ))}
-                <th className="px-3 py-3 text-right font-medium">المعدل</th>
-                <th className="px-3 py-3 text-right font-medium">التقدير</th>
-                <th className="px-3 py-3 text-right font-medium">الترتيب</th>
-                <th className="px-3 py-3 text-right font-medium">إجراءات</th>
+                <th>المعدل</th>
+                <th>التقدير</th>
+                <th>الترتيب</th>
+                <th>إجراءات</th>
               </tr>
             </thead>
             <tbody>

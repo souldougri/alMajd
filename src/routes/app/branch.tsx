@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Building2 } from "lucide-react";
+import { Building2, LayoutDashboard } from "lucide-react";
 import { RequireRole } from "@/lib/auth/guard";
 import { AppHeader } from "@/components/app/app-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonCard } from "@/components/ui/skeleton";
 import { BranchHeadDashboard } from "@/components/admin/branch-head-dashboard";
 import { useAuth } from "@/lib/auth/store";
 import { getHeadedBranches } from "@/lib/branches";
@@ -41,22 +44,43 @@ function BranchPage() {
     };
   }, [user]);
 
+  const admin = user?.role === "super_admin";
+  const dashboardTo = admin ? "/app/admin" : "/app/staff";
+  const dashboardLabel = admin ? "لوحة المدير" : "لوحة الموظف";
+
   return (
-    <div className="flex min-h-dvh flex-col bg-cream text-navy">
-      <AppHeader nav={{ title: "إدارة الفرع", items: [] }} />
-      <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-6">
+    <div className="app-frame flex min-h-dvh flex-col bg-cream text-navy">
+      <AppHeader
+        nav={{
+          title: "إدارة الفرع",
+          items: [
+            {
+              id: "dashboard",
+              label: dashboardLabel,
+              icon: LayoutDashboard,
+              to: dashboardTo,
+            },
+          ],
+        }}
+      />
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-5 p-4 sm:p-6">
+        <PageHeader
+          backTo={dashboardTo}
+          backLabel={dashboardLabel}
+          title="إدارة الفرع"
+          subtitle="Gestion de branche · بيانات فرعك وصلاحيات الناظر"
+        />
         {!checked || !user ? (
-          <p className="py-10 text-center text-sm text-navy/60">جارٍ التحقق…</p>
+          <div className="grid gap-4 sm:grid-cols-2" aria-busy="true" aria-label="جارٍ التحقق">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
         ) : !isHead && user.role !== "super_admin" ? (
-          <section className="rounded-2xl border border-dashed border-navy/20 bg-white p-8 text-center">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-gold/15 text-navy">
-              <Building2 className="size-7" />
-            </div>
-            <h2 className="mt-4 font-display text-lg font-bold text-navy">هذه المساحة مخصصة لنُظّار الفروع</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-navy/60">
-              لست معيّنًا ناظرًا على أي فرع حاليًا. عندما يعيّنك المدير العام ستظهر لك إدارة فرعك هنا تلقائيًا.
-            </p>
-          </section>
+          <EmptyState
+            icon={Building2}
+            title="هذه المساحة مخصصة لنُظّار الفروع"
+            body="لست معيّنًا ناظرًا على أي فرع حاليًا. عندما يعيّنك المدير العام ستظهر لك إدارة فرعك هنا تلقائيًا."
+          />
         ) : (
           <BranchHeadDashboard userId={user.id} />
         )}

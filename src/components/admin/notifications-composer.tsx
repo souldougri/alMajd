@@ -99,7 +99,7 @@ export function NotificationsComposer() {
         </p>
       </div>
 
-      <section className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
+      <section className="am-card p-5 shadow-sm">
         <h2 className="font-bold text-navy">إرسال إشعار</h2>
         <div className="mt-4 space-y-3">
           <label className="block">
@@ -192,7 +192,7 @@ export function NotificationsComposer() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-navy/10 bg-white shadow-sm">
+      <section className="am-card shadow-sm">
         <div className="border-b border-navy/10 px-5 py-3">
           <h2 className="font-bold text-navy">الإشعارات المرسلة</h2>
         </div>

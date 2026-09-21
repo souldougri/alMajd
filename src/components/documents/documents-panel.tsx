@@ -31,6 +31,13 @@ type Props = {
   classes?: Array<{ id: string; nameAr: string }>;
   students?: Array<{ id: string; nameAr: string }>;
   showArchived?: boolean;
+  /**
+   * Optional data-source overrides (e.g. the parent portal, whose documents
+   * come from the parent-authorized endpoint). Defaults keep the standard
+   * student/document endpoints.
+   */
+  fetchItems?: () => Promise<{ items: DocumentRow[]; error?: string }>;
+  downloadItem?: (id: string) => Promise<{ url?: string; error?: string }>;
 };
 
 const CATEGORY_OPTIONS: DocCategory[] = ["إداري", "طالب", "تعليمي", "أخرى"];
@@ -42,6 +49,8 @@ export function DocumentsPanel({
   classes = [],
   students = [],
   showArchived = false,
+  fetchItems = fetchDocuments,
+  downloadItem = downloadUrl,
 }: Props) {
   const [items, setItems] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +69,7 @@ export function DocumentsPanel({
   function reload() {
     setLoading(true);
     setError(null);
-    fetchDocuments()
+    fetchItems()
       .then((result) => {
         setItems(result.items);
         if (result.error) setError(result.error);
@@ -138,7 +147,7 @@ export function DocumentsPanel({
   }
 
   async function handleDownload(item: DocumentRow) {
-    const result = await downloadUrl(item.id);
+    const result = await downloadItem(item.id);
     if (result.error) {
       setUploadError(result.error);
       return;
@@ -168,7 +177,7 @@ export function DocumentsPanel({
   return (
     <div className="space-y-4">
       {canUpload ? (
-        <section className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
+        <section className="am-card p-5 shadow-sm">
           <h3 className="flex items-center gap-2 font-bold text-navy">
             <FileUp className="size-4 text-gold" />
             رفع مستند
@@ -296,7 +305,7 @@ export function DocumentsPanel({
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-navy/10 bg-white shadow-sm">
+      <section className="am-card shadow-sm">
         <div className="flex items-center gap-2 border-b border-navy/10 px-5 py-3">
           <FolderOpen className="size-4 text-gold" />
           <h3 className="font-bold text-navy">المستندات المتاحة</h3>

@@ -37,6 +37,7 @@ import { Route as AppAcademicRouteImport } from './routes/app/academic'
 import { Route as AppAccountantRouteImport } from './routes/app/accountant'
 import { Route as AppAdminRouteImport } from './routes/app/admin'
 import { Route as AppBranchRouteImport } from './routes/app/branch'
+import { Route as AppParentRouteImport } from './routes/app/parent'
 import { Route as AppRegistrarRouteImport } from './routes/app/registrar'
 import { Route as AppStaffRouteImport } from './routes/app/staff'
 import { Route as AppStudentRouteImport } from './routes/app/student'
@@ -65,6 +66,9 @@ import { Route as ApiNewsIdRouteImport } from './routes/api/news/$id'
 import { Route as ApiNewsManageRouteImport } from './routes/api/news/manage'
 import { Route as ApiNotificationsReadRouteImport } from './routes/api/notifications/read'
 import { Route as ApiNotificationsSentRouteImport } from './routes/api/notifications/sent'
+import { Route as ApiParentDocumentsRouteImport } from './routes/api/parent/documents'
+import { Route as ApiParentPortfolioRouteImport } from './routes/api/parent/portfolio'
+import { Route as ApiParentStudentRouteImport } from './routes/api/parent/student'
 import { Route as ApiStudentsIdRouteImport } from './routes/api/students/$id'
 import { Route as ApiStudentsMeRouteImport } from './routes/api/students/me'
 import { Route as ApiTeachersIdRouteImport } from './routes/api/teachers/$id'
@@ -90,6 +94,7 @@ import { Route as ApiDocumentsIdDownloadRouteImport } from './routes/api/documen
 import { Route as ApiFinanceExpensesIdRouteImport } from './routes/api/finance/expenses/$id'
 import { Route as ApiFinanceFeeTypesIdRouteImport } from './routes/api/finance/fee-types/$id'
 import { Route as ApiFinancePaymentsIdRouteImport } from './routes/api/finance/payments/$id'
+import { Route as ApiStudentsIdLoginsRouteImport } from './routes/api/students/$id/logins'
 import { Route as ApiStudentsIdPromoteRouteImport } from './routes/api/students/$id/promote'
 import { Route as ApiStudentsIdTransferRouteImport } from './routes/api/students/$id/transfer'
 import { Route as ApiUsersIdResetPasswordRouteImport } from './routes/api/users/$id/reset-password'
@@ -98,6 +103,10 @@ import { Route as ApiAcademicClassesIdResultsRouteImport } from './routes/api/ac
 import { Route as ApiAcademicClassesIdTimetableRouteImport } from './routes/api/academic/classes/$id/timetable'
 import { Route as ApiAcademicClassesIdTransferRouteImport } from './routes/api/academic/classes/$id/transfer'
 import { Route as ApiBranchesIdDutiesResponsibilityIdRouteImport } from './routes/api/branches/$id/duties/$responsibilityId'
+import { Route as ApiParentDocumentsIdDownloadRouteImport } from './routes/api/parent/documents/$id/download'
+import { Route as ApiReportsClassesIdStudentsRouteImport } from './routes/api/reports/classes/$id/students'
+import { Route as ApiReportsStudentsIdAdmissionRouteImport } from './routes/api/reports/students/$id/admission'
+import { Route as ApiReportsStudentsIdReportCardRouteImport } from './routes/api/reports/students/$id/report-card'
 import { Route as ApiAcademicClassesIdClassSubjectsSubjectIdRouteImport } from './routes/api/academic/classes/$id/class-subjects/$subjectId'
 import { Route as ApiAcademicClassesIdTimetableEntryIdRouteImport } from './routes/api/academic/classes/$id/timetable/$entryId'
 
@@ -238,6 +247,11 @@ const AppAdminRoute = AppAdminRouteImport.update({
 const AppBranchRoute = AppBranchRouteImport.update({
   id: '/branch',
   path: '/branch',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppParentRoute = AppParentRouteImport.update({
+  id: '/parent',
+  path: '/parent',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRegistrarRoute = AppRegistrarRouteImport.update({
@@ -381,6 +395,21 @@ const ApiNotificationsSentRoute = ApiNotificationsSentRouteImport.update({
   path: '/sent',
   getParentRoute: () => ApiNotificationsRoute,
 } as any)
+const ApiParentDocumentsRoute = ApiParentDocumentsRouteImport.update({
+  id: '/api/parent/documents',
+  path: '/api/parent/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiParentPortfolioRoute = ApiParentPortfolioRouteImport.update({
+  id: '/api/parent/portfolio',
+  path: '/api/parent/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiParentStudentRoute = ApiParentStudentRouteImport.update({
+  id: '/api/parent/student',
+  path: '/api/parent/student',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStudentsIdRoute = ApiStudentsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -510,6 +539,11 @@ const ApiFinancePaymentsIdRoute = ApiFinancePaymentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiFinancePaymentsRoute,
 } as any)
+const ApiStudentsIdLoginsRoute = ApiStudentsIdLoginsRouteImport.update({
+  id: '/logins',
+  path: '/logins',
+  getParentRoute: () => ApiStudentsIdRoute,
+} as any)
 const ApiStudentsIdPromoteRoute = ApiStudentsIdPromoteRouteImport.update({
   id: '/promote',
   path: '/promote',
@@ -555,6 +589,30 @@ const ApiBranchesIdDutiesResponsibilityIdRoute =
     path: '/$responsibilityId',
     getParentRoute: () => ApiBranchesIdDutiesRoute,
   } as any)
+const ApiParentDocumentsIdDownloadRoute =
+  ApiParentDocumentsIdDownloadRouteImport.update({
+    id: '/$id/download',
+    path: '/$id/download',
+    getParentRoute: () => ApiParentDocumentsRoute,
+  } as any)
+const ApiReportsClassesIdStudentsRoute =
+  ApiReportsClassesIdStudentsRouteImport.update({
+    id: '/api/reports/classes/$id/students',
+    path: '/api/reports/classes/$id/students',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiReportsStudentsIdAdmissionRoute =
+  ApiReportsStudentsIdAdmissionRouteImport.update({
+    id: '/api/reports/students/$id/admission',
+    path: '/api/reports/students/$id/admission',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiReportsStudentsIdReportCardRoute =
+  ApiReportsStudentsIdReportCardRouteImport.update({
+    id: '/api/reports/students/$id/report-card',
+    path: '/api/reports/students/$id/report-card',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAcademicClassesIdClassSubjectsSubjectIdRoute =
   ApiAcademicClassesIdClassSubjectsSubjectIdRouteImport.update({
     id: '/$subjectId',
@@ -596,6 +654,7 @@ export interface FileRoutesByFullPath {
   '/app/accountant': typeof AppAccountantRoute
   '/app/admin': typeof AppAdminRoute
   '/app/branch': typeof AppBranchRoute
+  '/app/parent': typeof AppParentRoute
   '/app/registrar': typeof AppRegistrarRoute
   '/app/staff': typeof AppStaffRoute
   '/app/student': typeof AppStudentRoute
@@ -624,6 +683,9 @@ export interface FileRoutesByFullPath {
   '/api/news/manage': typeof ApiNewsManageRoute
   '/api/notifications/read': typeof ApiNotificationsReadRoute
   '/api/notifications/sent': typeof ApiNotificationsSentRoute
+  '/api/parent/documents': typeof ApiParentDocumentsRouteWithChildren
+  '/api/parent/portfolio': typeof ApiParentPortfolioRoute
+  '/api/parent/student': typeof ApiParentStudentRoute
   '/api/students/$id': typeof ApiStudentsIdRouteWithChildren
   '/api/students/me': typeof ApiStudentsMeRoute
   '/api/teachers/$id': typeof ApiTeachersIdRoute
@@ -649,6 +711,7 @@ export interface FileRoutesByFullPath {
   '/api/finance/expenses/$id': typeof ApiFinanceExpensesIdRoute
   '/api/finance/fee-types/$id': typeof ApiFinanceFeeTypesIdRoute
   '/api/finance/payments/$id': typeof ApiFinancePaymentsIdRoute
+  '/api/students/$id/logins': typeof ApiStudentsIdLoginsRoute
   '/api/students/$id/promote': typeof ApiStudentsIdPromoteRoute
   '/api/students/$id/transfer': typeof ApiStudentsIdTransferRoute
   '/api/users/$id/reset-password': typeof ApiUsersIdResetPasswordRoute
@@ -657,6 +720,10 @@ export interface FileRoutesByFullPath {
   '/api/academic/classes/$id/timetable': typeof ApiAcademicClassesIdTimetableRouteWithChildren
   '/api/academic/classes/$id/transfer': typeof ApiAcademicClassesIdTransferRoute
   '/api/branches/$id/duties/$responsibilityId': typeof ApiBranchesIdDutiesResponsibilityIdRoute
+  '/api/parent/documents/$id/download': typeof ApiParentDocumentsIdDownloadRoute
+  '/api/reports/classes/$id/students': typeof ApiReportsClassesIdStudentsRoute
+  '/api/reports/students/$id/admission': typeof ApiReportsStudentsIdAdmissionRoute
+  '/api/reports/students/$id/report-card': typeof ApiReportsStudentsIdReportCardRoute
   '/api/academic/classes/$id/class-subjects/$subjectId': typeof ApiAcademicClassesIdClassSubjectsSubjectIdRoute
   '/api/academic/classes/$id/timetable/$entryId': typeof ApiAcademicClassesIdTimetableEntryIdRoute
 }
@@ -687,6 +754,7 @@ export interface FileRoutesByTo {
   '/app/accountant': typeof AppAccountantRoute
   '/app/admin': typeof AppAdminRoute
   '/app/branch': typeof AppBranchRoute
+  '/app/parent': typeof AppParentRoute
   '/app/registrar': typeof AppRegistrarRoute
   '/app/staff': typeof AppStaffRoute
   '/app/student': typeof AppStudentRoute
@@ -716,6 +784,9 @@ export interface FileRoutesByTo {
   '/api/news/manage': typeof ApiNewsManageRoute
   '/api/notifications/read': typeof ApiNotificationsReadRoute
   '/api/notifications/sent': typeof ApiNotificationsSentRoute
+  '/api/parent/documents': typeof ApiParentDocumentsRouteWithChildren
+  '/api/parent/portfolio': typeof ApiParentPortfolioRoute
+  '/api/parent/student': typeof ApiParentStudentRoute
   '/api/students/$id': typeof ApiStudentsIdRouteWithChildren
   '/api/students/me': typeof ApiStudentsMeRoute
   '/api/teachers/$id': typeof ApiTeachersIdRoute
@@ -741,6 +812,7 @@ export interface FileRoutesByTo {
   '/api/finance/expenses/$id': typeof ApiFinanceExpensesIdRoute
   '/api/finance/fee-types/$id': typeof ApiFinanceFeeTypesIdRoute
   '/api/finance/payments/$id': typeof ApiFinancePaymentsIdRoute
+  '/api/students/$id/logins': typeof ApiStudentsIdLoginsRoute
   '/api/students/$id/promote': typeof ApiStudentsIdPromoteRoute
   '/api/students/$id/transfer': typeof ApiStudentsIdTransferRoute
   '/api/users/$id/reset-password': typeof ApiUsersIdResetPasswordRoute
@@ -749,6 +821,10 @@ export interface FileRoutesByTo {
   '/api/academic/classes/$id/timetable': typeof ApiAcademicClassesIdTimetableRouteWithChildren
   '/api/academic/classes/$id/transfer': typeof ApiAcademicClassesIdTransferRoute
   '/api/branches/$id/duties/$responsibilityId': typeof ApiBranchesIdDutiesResponsibilityIdRoute
+  '/api/parent/documents/$id/download': typeof ApiParentDocumentsIdDownloadRoute
+  '/api/reports/classes/$id/students': typeof ApiReportsClassesIdStudentsRoute
+  '/api/reports/students/$id/admission': typeof ApiReportsStudentsIdAdmissionRoute
+  '/api/reports/students/$id/report-card': typeof ApiReportsStudentsIdReportCardRoute
   '/api/academic/classes/$id/class-subjects/$subjectId': typeof ApiAcademicClassesIdClassSubjectsSubjectIdRoute
   '/api/academic/classes/$id/timetable/$entryId': typeof ApiAcademicClassesIdTimetableEntryIdRoute
 }
@@ -781,6 +857,7 @@ export interface FileRoutesById {
   '/app/accountant': typeof AppAccountantRoute
   '/app/admin': typeof AppAdminRoute
   '/app/branch': typeof AppBranchRoute
+  '/app/parent': typeof AppParentRoute
   '/app/registrar': typeof AppRegistrarRoute
   '/app/staff': typeof AppStaffRoute
   '/app/student': typeof AppStudentRoute
@@ -810,6 +887,9 @@ export interface FileRoutesById {
   '/api/news/manage': typeof ApiNewsManageRoute
   '/api/notifications/read': typeof ApiNotificationsReadRoute
   '/api/notifications/sent': typeof ApiNotificationsSentRoute
+  '/api/parent/documents': typeof ApiParentDocumentsRouteWithChildren
+  '/api/parent/portfolio': typeof ApiParentPortfolioRoute
+  '/api/parent/student': typeof ApiParentStudentRoute
   '/api/students/$id': typeof ApiStudentsIdRouteWithChildren
   '/api/students/me': typeof ApiStudentsMeRoute
   '/api/teachers/$id': typeof ApiTeachersIdRoute
@@ -835,6 +915,7 @@ export interface FileRoutesById {
   '/api/finance/expenses/$id': typeof ApiFinanceExpensesIdRoute
   '/api/finance/fee-types/$id': typeof ApiFinanceFeeTypesIdRoute
   '/api/finance/payments/$id': typeof ApiFinancePaymentsIdRoute
+  '/api/students/$id/logins': typeof ApiStudentsIdLoginsRoute
   '/api/students/$id/promote': typeof ApiStudentsIdPromoteRoute
   '/api/students/$id/transfer': typeof ApiStudentsIdTransferRoute
   '/api/users/$id/reset-password': typeof ApiUsersIdResetPasswordRoute
@@ -843,6 +924,10 @@ export interface FileRoutesById {
   '/api/academic/classes/$id/timetable': typeof ApiAcademicClassesIdTimetableRouteWithChildren
   '/api/academic/classes/$id/transfer': typeof ApiAcademicClassesIdTransferRoute
   '/api/branches/$id/duties/$responsibilityId': typeof ApiBranchesIdDutiesResponsibilityIdRoute
+  '/api/parent/documents/$id/download': typeof ApiParentDocumentsIdDownloadRoute
+  '/api/reports/classes/$id/students': typeof ApiReportsClassesIdStudentsRoute
+  '/api/reports/students/$id/admission': typeof ApiReportsStudentsIdAdmissionRoute
+  '/api/reports/students/$id/report-card': typeof ApiReportsStudentsIdReportCardRoute
   '/api/academic/classes/$id/class-subjects/$subjectId': typeof ApiAcademicClassesIdClassSubjectsSubjectIdRoute
   '/api/academic/classes/$id/timetable/$entryId': typeof ApiAcademicClassesIdTimetableEntryIdRoute
 }
@@ -876,6 +961,7 @@ export interface FileRouteTypes {
     | '/app/accountant'
     | '/app/admin'
     | '/app/branch'
+    | '/app/parent'
     | '/app/registrar'
     | '/app/staff'
     | '/app/student'
@@ -904,6 +990,9 @@ export interface FileRouteTypes {
     | '/api/news/manage'
     | '/api/notifications/read'
     | '/api/notifications/sent'
+    | '/api/parent/documents'
+    | '/api/parent/portfolio'
+    | '/api/parent/student'
     | '/api/students/$id'
     | '/api/students/me'
     | '/api/teachers/$id'
@@ -929,6 +1018,7 @@ export interface FileRouteTypes {
     | '/api/finance/expenses/$id'
     | '/api/finance/fee-types/$id'
     | '/api/finance/payments/$id'
+    | '/api/students/$id/logins'
     | '/api/students/$id/promote'
     | '/api/students/$id/transfer'
     | '/api/users/$id/reset-password'
@@ -937,6 +1027,10 @@ export interface FileRouteTypes {
     | '/api/academic/classes/$id/timetable'
     | '/api/academic/classes/$id/transfer'
     | '/api/branches/$id/duties/$responsibilityId'
+    | '/api/parent/documents/$id/download'
+    | '/api/reports/classes/$id/students'
+    | '/api/reports/students/$id/admission'
+    | '/api/reports/students/$id/report-card'
     | '/api/academic/classes/$id/class-subjects/$subjectId'
     | '/api/academic/classes/$id/timetable/$entryId'
   fileRoutesByTo: FileRoutesByTo
@@ -967,6 +1061,7 @@ export interface FileRouteTypes {
     | '/app/accountant'
     | '/app/admin'
     | '/app/branch'
+    | '/app/parent'
     | '/app/registrar'
     | '/app/staff'
     | '/app/student'
@@ -996,6 +1091,9 @@ export interface FileRouteTypes {
     | '/api/news/manage'
     | '/api/notifications/read'
     | '/api/notifications/sent'
+    | '/api/parent/documents'
+    | '/api/parent/portfolio'
+    | '/api/parent/student'
     | '/api/students/$id'
     | '/api/students/me'
     | '/api/teachers/$id'
@@ -1021,6 +1119,7 @@ export interface FileRouteTypes {
     | '/api/finance/expenses/$id'
     | '/api/finance/fee-types/$id'
     | '/api/finance/payments/$id'
+    | '/api/students/$id/logins'
     | '/api/students/$id/promote'
     | '/api/students/$id/transfer'
     | '/api/users/$id/reset-password'
@@ -1029,6 +1128,10 @@ export interface FileRouteTypes {
     | '/api/academic/classes/$id/timetable'
     | '/api/academic/classes/$id/transfer'
     | '/api/branches/$id/duties/$responsibilityId'
+    | '/api/parent/documents/$id/download'
+    | '/api/reports/classes/$id/students'
+    | '/api/reports/students/$id/admission'
+    | '/api/reports/students/$id/report-card'
     | '/api/academic/classes/$id/class-subjects/$subjectId'
     | '/api/academic/classes/$id/timetable/$entryId'
   id:
@@ -1060,6 +1163,7 @@ export interface FileRouteTypes {
     | '/app/accountant'
     | '/app/admin'
     | '/app/branch'
+    | '/app/parent'
     | '/app/registrar'
     | '/app/staff'
     | '/app/student'
@@ -1089,6 +1193,9 @@ export interface FileRouteTypes {
     | '/api/news/manage'
     | '/api/notifications/read'
     | '/api/notifications/sent'
+    | '/api/parent/documents'
+    | '/api/parent/portfolio'
+    | '/api/parent/student'
     | '/api/students/$id'
     | '/api/students/me'
     | '/api/teachers/$id'
@@ -1114,6 +1221,7 @@ export interface FileRouteTypes {
     | '/api/finance/expenses/$id'
     | '/api/finance/fee-types/$id'
     | '/api/finance/payments/$id'
+    | '/api/students/$id/logins'
     | '/api/students/$id/promote'
     | '/api/students/$id/transfer'
     | '/api/users/$id/reset-password'
@@ -1122,6 +1230,10 @@ export interface FileRouteTypes {
     | '/api/academic/classes/$id/timetable'
     | '/api/academic/classes/$id/transfer'
     | '/api/branches/$id/duties/$responsibilityId'
+    | '/api/parent/documents/$id/download'
+    | '/api/reports/classes/$id/students'
+    | '/api/reports/students/$id/admission'
+    | '/api/reports/students/$id/report-card'
     | '/api/academic/classes/$id/class-subjects/$subjectId'
     | '/api/academic/classes/$id/timetable/$entryId'
   fileRoutesById: FileRoutesById
@@ -1163,6 +1275,12 @@ export interface RootRouteChildren {
   ApiFinanceFeeTypesRoute: typeof ApiFinanceFeeTypesRouteWithChildren
   ApiFinancePaymentsRoute: typeof ApiFinancePaymentsRouteWithChildren
   ApiMediaCoverRoute: typeof ApiMediaCoverRoute
+  ApiParentDocumentsRoute: typeof ApiParentDocumentsRouteWithChildren
+  ApiParentPortfolioRoute: typeof ApiParentPortfolioRoute
+  ApiParentStudentRoute: typeof ApiParentStudentRoute
+  ApiReportsClassesIdStudentsRoute: typeof ApiReportsClassesIdStudentsRoute
+  ApiReportsStudentsIdAdmissionRoute: typeof ApiReportsStudentsIdAdmissionRoute
+  ApiReportsStudentsIdReportCardRoute: typeof ApiReportsStudentsIdReportCardRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1363,6 +1481,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBranchRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/parent': {
+      id: '/app/parent'
+      path: '/parent'
+      fullPath: '/app/parent'
+      preLoaderRoute: typeof AppParentRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/registrar': {
       id: '/app/registrar'
       path: '/registrar'
@@ -1559,6 +1684,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiNotificationsSentRouteImport
       parentRoute: typeof ApiNotificationsRoute
     }
+    '/api/parent/documents': {
+      id: '/api/parent/documents'
+      path: '/api/parent/documents'
+      fullPath: '/api/parent/documents'
+      preLoaderRoute: typeof ApiParentDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/parent/portfolio': {
+      id: '/api/parent/portfolio'
+      path: '/api/parent/portfolio'
+      fullPath: '/api/parent/portfolio'
+      preLoaderRoute: typeof ApiParentPortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/parent/student': {
+      id: '/api/parent/student'
+      path: '/api/parent/student'
+      fullPath: '/api/parent/student'
+      preLoaderRoute: typeof ApiParentStudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/students/$id': {
       id: '/api/students/$id'
       path: '/$id'
@@ -1734,6 +1880,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFinancePaymentsIdRouteImport
       parentRoute: typeof ApiFinancePaymentsRoute
     }
+    '/api/students/$id/logins': {
+      id: '/api/students/$id/logins'
+      path: '/logins'
+      fullPath: '/api/students/$id/logins'
+      preLoaderRoute: typeof ApiStudentsIdLoginsRouteImport
+      parentRoute: typeof ApiStudentsIdRoute
+    }
     '/api/students/$id/promote': {
       id: '/api/students/$id/promote'
       path: '/promote'
@@ -1790,6 +1943,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBranchesIdDutiesResponsibilityIdRouteImport
       parentRoute: typeof ApiBranchesIdDutiesRoute
     }
+    '/api/parent/documents/$id/download': {
+      id: '/api/parent/documents/$id/download'
+      path: '/$id/download'
+      fullPath: '/api/parent/documents/$id/download'
+      preLoaderRoute: typeof ApiParentDocumentsIdDownloadRouteImport
+      parentRoute: typeof ApiParentDocumentsRoute
+    }
+    '/api/reports/classes/$id/students': {
+      id: '/api/reports/classes/$id/students'
+      path: '/api/reports/classes/$id/students'
+      fullPath: '/api/reports/classes/$id/students'
+      preLoaderRoute: typeof ApiReportsClassesIdStudentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/reports/students/$id/admission': {
+      id: '/api/reports/students/$id/admission'
+      path: '/api/reports/students/$id/admission'
+      fullPath: '/api/reports/students/$id/admission'
+      preLoaderRoute: typeof ApiReportsStudentsIdAdmissionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/reports/students/$id/report-card': {
+      id: '/api/reports/students/$id/report-card'
+      path: '/api/reports/students/$id/report-card'
+      fullPath: '/api/reports/students/$id/report-card'
+      preLoaderRoute: typeof ApiReportsStudentsIdReportCardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/academic/classes/$id/class-subjects/$subjectId': {
       id: '/api/academic/classes/$id/class-subjects/$subjectId'
       path: '/$subjectId'
@@ -1834,6 +2015,7 @@ interface AppRouteChildren {
   AppAccountantRoute: typeof AppAccountantRoute
   AppAdminRoute: typeof AppAdminRoute
   AppBranchRoute: typeof AppBranchRoute
+  AppParentRoute: typeof AppParentRoute
   AppRegistrarRoute: typeof AppRegistrarRoute
   AppStaffRoute: typeof AppStaffRoute
   AppStudentRoute: typeof AppStudentRoute
@@ -1846,6 +2028,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccountantRoute: AppAccountantRoute,
   AppAdminRoute: AppAdminRoute,
   AppBranchRoute: AppBranchRoute,
+  AppParentRoute: AppParentRoute,
   AppRegistrarRoute: AppRegistrarRoute,
   AppStaffRoute: AppStaffRoute,
   AppStudentRoute: AppStudentRoute,
@@ -1940,11 +2123,13 @@ const ApiNotificationsRouteWithChildren =
   ApiNotificationsRoute._addFileChildren(ApiNotificationsRouteChildren)
 
 interface ApiStudentsIdRouteChildren {
+  ApiStudentsIdLoginsRoute: typeof ApiStudentsIdLoginsRoute
   ApiStudentsIdPromoteRoute: typeof ApiStudentsIdPromoteRoute
   ApiStudentsIdTransferRoute: typeof ApiStudentsIdTransferRoute
 }
 
 const ApiStudentsIdRouteChildren: ApiStudentsIdRouteChildren = {
+  ApiStudentsIdLoginsRoute: ApiStudentsIdLoginsRoute,
   ApiStudentsIdPromoteRoute: ApiStudentsIdPromoteRoute,
   ApiStudentsIdTransferRoute: ApiStudentsIdTransferRoute,
 }
@@ -2208,6 +2393,17 @@ const ApiFinancePaymentsRouteChildren: ApiFinancePaymentsRouteChildren = {
 const ApiFinancePaymentsRouteWithChildren =
   ApiFinancePaymentsRoute._addFileChildren(ApiFinancePaymentsRouteChildren)
 
+interface ApiParentDocumentsRouteChildren {
+  ApiParentDocumentsIdDownloadRoute: typeof ApiParentDocumentsIdDownloadRoute
+}
+
+const ApiParentDocumentsRouteChildren: ApiParentDocumentsRouteChildren = {
+  ApiParentDocumentsIdDownloadRoute: ApiParentDocumentsIdDownloadRoute,
+}
+
+const ApiParentDocumentsRouteWithChildren =
+  ApiParentDocumentsRoute._addFileChildren(ApiParentDocumentsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   MarketingRoute: MarketingRouteWithChildren,
   AppRoute: AppRouteWithChildren,
@@ -2245,6 +2441,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFinanceFeeTypesRoute: ApiFinanceFeeTypesRouteWithChildren,
   ApiFinancePaymentsRoute: ApiFinancePaymentsRouteWithChildren,
   ApiMediaCoverRoute: ApiMediaCoverRoute,
+  ApiParentDocumentsRoute: ApiParentDocumentsRouteWithChildren,
+  ApiParentPortfolioRoute: ApiParentPortfolioRoute,
+  ApiParentStudentRoute: ApiParentStudentRoute,
+  ApiReportsClassesIdStudentsRoute: ApiReportsClassesIdStudentsRoute,
+  ApiReportsStudentsIdAdmissionRoute: ApiReportsStudentsIdAdmissionRoute,
+  ApiReportsStudentsIdReportCardRoute: ApiReportsStudentsIdReportCardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

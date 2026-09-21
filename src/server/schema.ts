@@ -512,6 +512,11 @@ CREATE TABLE IF NOT EXISTS school_documents (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS student_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS duties TEXT NOT NULL DEFAULT '';
+-- Parent foundation (one parent account ↔ one student): the link lives on
+-- the parent user row; UNIQUE enforces a single parent account per student,
+-- the single column enforces a single student per parent account. FK keeps
+-- referential integrity (a deleted student drops its parent login).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_student_id TEXT REFERENCES students(id) ON DELETE CASCADE;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS branch_id TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS branch_id TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS entity_type TEXT NOT NULL DEFAULT '';
@@ -526,6 +531,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at
 -- whole schema batch here (column "branch_id" does not exist).
 CREATE INDEX IF NOT EXISTS idx_documents_branch ON documents(branch_id);
 CREATE INDEX IF NOT EXISTS idx_audit_branch ON audit_logs(branch_id);
+-- One parent account per student (NULLs are exempt from uniqueness).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_parent_student ON users(parent_student_id);
 `;
 
 /** Reference seed data for the lookup tables. */

@@ -7,7 +7,7 @@ export function Badge({
   children,
 }: {
   className?: string;
-  tone?: "muted" | "ok" | "warn" | "bad" | "brand";
+  tone?: "muted" | "ok" | "warn" | "bad" | "brand" | "info";
   children: ReactNode;
 }) {
   const tones = {
@@ -16,6 +16,7 @@ export function Badge({
     warn: "bg-warn/20 text-ink",
     bad: "bg-danger/10 text-danger",
     brand: "bg-primary/10 text-primary",
+    info: "bg-info/10 text-info",
   } as const;
   return (
     <span

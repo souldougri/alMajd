@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createUserServer, deactivateStudentUserServer, listUsersSafe, requireAdminFromRequest, requireRegistrarOrAdminFromRequest, upsertStudentUserServer } from "@/server/auth";
+import { assertBoundStudentLoginAuthority, createUserServer, deactivateStudentUserServer, listUsersSafe, requireAdminFromRequest, requireRegistrarOrAdminFromRequest, requireUserFromRequest, upsertStudentUserServer } from "@/server/auth";
 import { ApiError, handle, jsonOk } from "@/server/http";
 import { composeNotification } from "@/server/notifications";
 import { type Role } from "@/lib/auth/types";
@@ -30,13 +30,15 @@ export const Route = createFileRoute("/api/users")({
       },
       POST: async ({ request }) => {
         try {
-          const actor = await requireRegistrarOrAdminFromRequest(request);
+          const actor = await requireUserFromRequest(request);
           const body = (await request.json()) as CreateUserBody;
           const role = typeof body.role === "string" ? (body.role as Role) : "staff";
           const studentId = typeof body.studentId === "string" && body.studentId ? body.studentId : null;
 
           // Bound student login deactivation when a student record is removed.
+          // Stays registrar/admin-only: heads may create logins, never disable them.
           if (body.disableLogin === true) {
+            await requireRegistrarOrAdminFromRequest(request);
             if (!studentId) {
               throw new ApiError("حدد الطالب المراد تعطيل حسابه");
             }
@@ -60,11 +62,18 @@ export const Route = createFileRoute("/api/users")({
           const active = typeof body.active === "boolean" ? body.active : true;
           const initialPassword = typeof body.initialPassword === "string" ? body.initialPassword : "";
 
-          // Bound student logins (registrar workspace): idempotent creation
-          // with optimistic login id generation when no email is provided.
+          // Bound student logins: idempotent creation with optimistic login id
+          // generation when no email is provided. Permitted to super_admin,
+          // registrar-duty staff, and the active Branch Head of the student's
+          // own branch (general account creation below stays super_admin-only).
           if (role === "student" && studentId) {
+            await assertBoundStudentLoginAuthority(actor, studentId);
+            // Heads may create/refresh logins but never disable them: the
+            // active flag stays forced on unless the actor holds registrar
+            // authority (the disableLogin path above stays registrar-only).
+            const canToggle = actor.role === "super_admin" || actor.duties.includes("registrar");
             const result = await upsertStudentUserServer(
-              { nameAr, nameEn, email, initialPassword, studentId, active },
+              { nameAr, nameEn, email, initialPassword, studentId, active: canToggle ? active : true },
               actor,
             );
             if (result.created) {

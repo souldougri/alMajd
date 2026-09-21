@@ -64,15 +64,24 @@ export type BranchStudent = {
   nameAr: string;
   klass: string;
   classId?: string;
+  /** Present in the server payload; preserved so edits never reset it. */
+  gender?: string;
 };
 
 export type BranchClass = {
   id: string;
   nameAr: string;
+  nameFr?: string;
+  level?: string | null;
+  section?: string | null;
+  capacity?: number | null;
+  academicYearId?: string;
   headTeacherNameAr?: string;
+  active?: boolean;
 };
 
 export type AttendanceEntry = {
+  id?: string;
   studentId: string;
   studentNameAr: string;
   status: string;
@@ -102,6 +111,18 @@ export async function getHeadedBranches(userId: string): Promise<Branch[]> {
   return branches.filter((b, i) => heads[i]?.userId === userId);
 }
 
+/**
+ * Branches where the given user is currently the primary Financial Officer.
+ * Same composition pattern as headed branches (scope-filtered list plus
+ * per-branch scoped reads). Resolving assignments only — Financial Officers
+ * report to the System Admin, never to a Branch Head.
+ */
+export async function getFinancialOfficerBranches(userId: string): Promise<Branch[]> {
+  const branches = await getBranches();
+  const officers = await Promise.all(branches.map((b) => getBranchFinancialOfficer(b.id).catch(() => null)));
+  return branches.filter((b, i) => officers[i]?.userId === userId);
+}
+
 /** Students enrolled in a branch (branch scope enforced server-side). */
 export async function getBranchStudents(branchId: string): Promise<BranchStudent[]> {
   const res = await api.get<{ items: BranchStudent[] }>(`/api/students?branchId=${encodeURIComponent(branchId)}`);
@@ -120,6 +141,387 @@ export async function getClassAttendance(classId: string, date: string): Promise
     `/api/academic/attendance?classId=${encodeURIComponent(classId)}&date=${encodeURIComponent(date)}`,
   );
   return unwrap(res, res.data?.items ?? [], "تعذر تحميل الحضور");
+}
+
+export type BranchStudentInput = {
+  /**
+   * Idempotency key for the registration (record + login). The branch form
+   * generates one per opened form so retries never create a duplicate.
+   */
+  id?: string;
+  nameAr: string;
+  nameFr?: string;
+  gender?: string;
+  klass?: string;
+  /** Preferred over the free-text klass label: must belong to the target branch (server-enforced). */
+  classId?: string;
+  dob?: string;
+  placeOfBirth?: string;
+  parentAr?: string;
+  phone?: string;
+  annualFee?: number;
+  /** Optional portal login created in the same registration flow. */
+  loginEmail?: string;
+  loginPassword?: string;
+};
+
+/** One-time account credentials (password present only at creation). */
+export type AccountCredentials = {
+  email: string;
+  password: string;
+  created: boolean;
+};
+
+/** Registration result: the student record plus both one-time logins (student + parent). */
+export type BranchStudentRegistration = {
+  student: BranchStudent;
+  login: { student: AccountCredentials; parent: AccountCredentials };
+};
+
+/** Registers a student in the given branch (target-branch scope enforced server-side). */
+export async function registerBranchStudent(branchId: string, input: BranchStudentInput): Promise<BranchStudentRegistration> {
+  const res = await api.post<{ student: BranchStudent; login: BranchStudentRegistration["login"] }>("/api/students", { ...input, branchId });
+  if (!res.ok || !res.data?.student || !res.data?.login?.student || !res.data?.login?.parent) {
+    throw new Error(res.error ?? "تعذر تسجيل الطالب");
+  }
+  return { student: res.data.student, login: res.data.login };
+}
+
+/** Full student record for the profile view (branch scope enforced server-side). */
+export type BranchStudentDetails = {
+  id: string;
+  nameAr: string;
+  nameFr?: string;
+  gender?: string;
+  klass?: string;
+  classId?: string;
+  dob?: string;
+  placeOfBirth?: string;
+  parentAr?: string;
+  phone?: string;
+  enrolled?: string;
+  annualFee?: number;
+  branchId?: string;
+  branchNameAr?: string;
+  active?: boolean;
+};
+
+/** Login emails only — passwords are never stored nor re-exposed. */
+export type StudentLoginStatus = {
+  student: { email: string } | null;
+  parent: { email: string } | null;
+};
+
+export async function getStudentDetails(studentId: string): Promise<BranchStudentDetails> {
+  const res = await api.get<{ student: BranchStudentDetails }>(`/api/students/${encodeURIComponent(studentId)}`);
+  return unwrap(res, res.data?.student, "تعذر تحميل ملف الطالب");
+}
+
+export async function getStudentLoginStatus(studentId: string): Promise<StudentLoginStatus> {
+  const res = await api.get<{ logins: StudentLoginStatus }>(`/api/students/${encodeURIComponent(studentId)}/logins`);
+  return unwrap(res, res.data?.logins, "تعذر تحميل حالة الحسابات");
+}
+
+/** Edits a student record (student's branch scope enforced server-side). */
+export async function updateBranchStudent(
+  studentId: string,
+  input: Partial<BranchStudentInput>,
+): Promise<BranchStudent> {
+  const res = await api.patch<{ student: BranchStudent }>(`/api/students/${studentId}`, input);
+  return unwrap(res, res.data?.student, "تعذر حفظ بيانات الطالب");
+}
+
+export type StudentLoginResult = {
+  email: string;
+  password: string;
+  created: boolean;
+};
+
+/**
+ * Creates (or refreshes) the portal login for an EXISTING student.
+ * Permitted to super_admin, registrar duty, and the active Branch Head of
+ * the student's own branch (server-enforced). Never general user creation.
+ */
+export async function ensureBranchStudentLogin(
+  studentId: string,
+  nameAr: string,
+  opts?: { email?: string; password?: string },
+): Promise<StudentLoginResult> {
+  const res = await api.post<{ login: StudentLoginResult }>("/api/users", {
+    role: "student",
+    studentId,
+    nameAr,
+    email: opts?.email,
+    initialPassword: opts?.password,
+    active: true,
+  });
+  if (!res.ok) throw new Error(res.error ?? "تعذر إنشاء حساب الدخول");
+  return res.data?.login ?? { email: "", password: "", created: false };
+}
+
+export type TeachingAssignment = {
+  id: string;
+  teacherUserId: string;
+  classId: string;
+  subjectId: string;
+  academicYearId: string;
+  assignedAt: string;
+  teacherNameAr?: string;
+  classNameAr?: string;
+  subjectCode?: string;
+  yearLabel?: string;
+};
+
+/** Teaching assignments of a teacher (workload view). */
+export async function getTeacherAssignments(teacherUserId: string): Promise<TeachingAssignment[]> {
+  const res = await api.get<{ items: TeachingAssignment[] }>(
+    `/api/teaching-assignments?teacherUserId=${encodeURIComponent(teacherUserId)}`,
+  );
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل مهام التدريس");
+}
+
+/** Assigns a teacher to a class+subject (branch derived from class, scope enforced server-side). */
+export async function addTeachingAssignment(input: {
+  teacherUserId: string;
+  classId: string;
+  subjectId: string;
+  academicYearId: string;
+}): Promise<void> {
+  const res = await api.post("/api/teaching-assignments", input);
+  unwrap(res, undefined, "تعذر إسناد مهمة التدريس");
+}
+
+/** Removes a teaching assignment (branch scope enforced server-side). */
+export async function removeTeachingAssignment(assignmentId: string): Promise<void> {
+  const res = await api.del(`/api/teaching-assignments/${assignmentId}`);
+  unwrap(res, undefined, "تعذر إلغاء مهمة التدريس");
+}
+
+export type AcademicYear = {
+  id: string;
+  label: string;
+  isCurrent: boolean;
+  active: boolean;
+};
+
+/** Academic years (readable by any authenticated user; writes stay duty-gated). */
+export async function getAcademicYears(): Promise<AcademicYear[]> {
+  const res = await api.get<{ items: AcademicYear[] }>("/api/academic/years");
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل السنوات الدراسية");
+}
+
+export type ClassSubject = {
+  id: string;
+  classId: string;
+  subjectId: string;
+  subjectCode?: string;
+  subjectNameAr?: string;
+  coefficient: number;
+  maxScore: number;
+  active: boolean;
+};
+
+/** Subjects attached to a class (branch scope enforced server-side). */
+export async function getClassSubjects(classId: string): Promise<ClassSubject[]> {
+  const res = await api.get<{ items: ClassSubject[] }>(`/api/academic/classes/${classId}/class-subjects`);
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل مواد الفصل");
+}
+
+/** Marks attendance (branch scope enforced server-side via the class). */
+export async function markBranchAttendance(input: {
+  classId: string;
+  studentId: string;
+  date: string;
+  status: string;
+}): Promise<void> {
+  const res = await api.post("/api/academic/attendance", input);
+  unwrap(res, undefined, "تعذر تسجيل الحضور");
+}
+
+/** Removes an attendance mark (branch scope enforced server-side). */
+export async function removeBranchAttendance(attendanceId: string): Promise<void> {
+  const res = await api.del(`/api/academic/attendance/${attendanceId}`);
+  unwrap(res, undefined, "تعذر حذف تسجيل الحضور");
+}
+
+export type BranchWarning = {
+  id: string;
+  studentId: string;
+  studentNameAr: string;
+  kind: string;
+  date: string;
+  body: string;
+};
+
+/** Warnings of a branch (branch scope enforced server-side). */
+export async function getBranchWarnings(branchId: string): Promise<BranchWarning[]> {
+  const res = await api.get<{ items: BranchWarning[] }>(
+    `/api/academic/warnings?branchId=${encodeURIComponent(branchId)}`,
+  );
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل التنبيهات");
+}
+
+/** Issues a warning (branch scope enforced server-side). */
+export async function addBranchWarning(input: {
+  studentId: string;
+  branchId: string;
+  kind: string;
+  date: string;
+  body?: string;
+}): Promise<void> {
+  const res = await api.post("/api/academic/warnings", input);
+  unwrap(res, undefined, "تعذر إصدار التنبيه");
+}
+
+/** Removes a warning (branch scope enforced server-side). */
+export async function removeBranchWarning(warningId: string): Promise<void> {
+  const res = await api.del(`/api/academic/warnings/${warningId}`);
+  unwrap(res, undefined, "تعذر حذف التنبيه");
+}
+
+export type BranchClassInput = {
+  academicYearId: string;
+  nameAr: string;
+  nameFr?: string;
+  level?: string;
+  section?: string;
+  capacity?: number;
+  active?: boolean;
+};
+
+/**
+ * Creates a class in a branch.
+ * super_admin OR academic/registrar duty OR Branch Head of the branch
+ * (server-enforced; cross-branch creation returns 403).
+ */
+export async function createBranchClass(branchId: string, input: BranchClassInput): Promise<BranchClass> {
+  const res = await api.post<{ item: BranchClass }>("/api/academic/classes", { ...input, branchId });
+  return unwrap(res, res.data?.item, "تعذر إنشاء الفصل");
+}
+
+/** Edits a class (same authority as creation, resolved from the class). */
+export async function updateBranchClass(
+  classId: string,
+  input: Partial<Omit<BranchClassInput, "academicYearId">>,
+): Promise<BranchClass> {
+  const res = await api.patch<{ item: BranchClass }>(`/api/academic/classes/${classId}`, input);
+  return unwrap(res, res.data?.item, "تعذر حفظ بيانات الفصل");
+}
+
+/** Attaches a subject to a class (head of class branch, academic duty, or admin). */
+export async function attachClassSubject(
+  classId: string,
+  input: { subjectId: string; coefficient?: number; maxScore?: number },
+): Promise<void> {
+  const res = await api.post(`/api/academic/classes/${classId}/class-subjects`, input);
+  unwrap(res, undefined, "تعذر ربط المادة بالفصل");
+}
+
+/** Detaches a subject from a class (same authority as attaching). */
+export async function detachClassSubject(classId: string, subjectId: string): Promise<void> {
+  const res = await api.del(`/api/academic/classes/${classId}/class-subjects/${subjectId}`);
+  unwrap(res, undefined, "تعذر فصل المادة عن الفصل");
+}
+
+export type TimetableSlot = {
+  id: string;
+  classId: string;
+  day: number;
+  slot: number;
+  subjectId: string;
+  subjectCode?: string;
+};
+
+/** Timetable slots of a class (branch scope enforced server-side). */
+export async function getClassTimetable(classId: string): Promise<TimetableSlot[]> {
+  const res = await api.get<{ items: TimetableSlot[] }>(`/api/academic/classes/${classId}/timetable`);
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل الجدول الدراسي");
+}
+
+/** Creates/updates one timetable slot (head of class branch, academic duty, or admin). */
+export async function upsertTimetableSlot(
+  classId: string,
+  input: { day: number; slot: number; subjectId: string },
+): Promise<void> {
+  const res = await api.post(`/api/academic/classes/${classId}/timetable`, input);
+  unwrap(res, undefined, "تعذر حفظ الحصة");
+}
+
+/** Removes one timetable slot (same authority as upsert). */
+export async function removeTimetableSlot(classId: string, entryId: string): Promise<void> {
+  const res = await api.del(`/api/academic/classes/${classId}/timetable/${entryId}`);
+  unwrap(res, undefined, "تعذر حذف الحصة");
+}
+
+export type ExamSession = {
+  id: string;
+  termId: string;
+  termNameAr?: string;
+  branchId: string;
+  name: string;
+  date: string;
+};
+
+export type Term = {
+  id: string;
+  nameAr: string;
+  active: boolean;
+};
+
+/** Exam sessions of a branch (branch scope enforced server-side). */
+export async function getBranchExamSessions(branchId: string): Promise<ExamSession[]> {
+  const res = await api.get<{ items: ExamSession[] }>(
+    `/api/academic/exam-sessions?branchId=${encodeURIComponent(branchId)}`,
+  );
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل الامتحانات");
+}
+
+/** Creates an exam session (head of branch, academic duty, or admin). No delete API exists. */
+export async function createBranchExamSession(input: {
+  branchId: string;
+  termId: string;
+  name: string;
+  date: string;
+}): Promise<void> {
+  const res = await api.post("/api/academic/exam-sessions", input);
+  unwrap(res, undefined, "تعذر إنشاء الامتحان");
+}
+
+export type CatalogSubject = {
+  id: string;
+  code: string;
+  nameAr: string;
+  active: boolean;
+};
+
+/** Global subject catalog (readable by any authenticated user; catalog writes stay duty-gated). */
+export async function getSubjectsCatalog(): Promise<CatalogSubject[]> {
+  const res = await api.get<{ items: CatalogSubject[] }>("/api/academic/subjects");
+  return unwrap(res, (res.data?.items ?? []).filter((s) => s.active), "تعذر تحميل المواد");
+}
+
+/** Active terms for pickers (readable by any authenticated user). */
+export async function getTerms(): Promise<Term[]> {
+  const res = await api.get<{ items: Term[] }>("/api/academic/terms");
+  return unwrap(res, (res.data?.items ?? []).filter((t) => t.active), "تعذر تحميل الفصول الدراسية");
+}
+
+export type PublishedResult = {
+  classId: string;
+  termId: string;
+  published: boolean;
+};
+
+/** Published-result flags of a class (branch scope enforced server-side). */
+export async function getClassPublishedResults(classId: string): Promise<PublishedResult[]> {
+  const res = await api.get<{ items: PublishedResult[] }>(`/api/academic/classes/${classId}/results`);
+  return unwrap(res, res.data?.items ?? [], "تعذر تحميل حالة النشر");
+}
+
+/** Publishes/unpublishes a class bulletin (head of class branch, academic duty, or admin). */
+export async function setClassPublishedResult(classId: string, termId: string, published: boolean): Promise<void> {
+  const res = await api.post(`/api/academic/classes/${classId}/results`, { termId, published });
+  unwrap(res, undefined, "تعذر تحديث حالة النشر");
 }
 
 export type BranchInput = {

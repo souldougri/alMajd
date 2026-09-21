@@ -60,7 +60,7 @@ export function NewsManager() {
         />
       ) : null}
 
-      <section className="overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-sm">
+      <section className="overflow-hidden am-card shadow-sm">
         <div className="border-b border-navy/10 px-5 py-3">
           <h2 className="font-bold text-navy">القائمة</h2>
         </div>
@@ -163,7 +163,7 @@ function NewsEditor({
   }
 
   return (
-    <section className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
+    <section className="am-card p-5 shadow-sm">
       <h2 className="font-bold text-navy">{initial ? "تعديل الخبر" : "خبر جديد"}</h2>
       <div className="mt-4 grid gap-3">
         <label className="block">

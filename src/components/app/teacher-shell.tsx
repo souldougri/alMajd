@@ -287,7 +287,7 @@ export function TeacherShell() {
                 />
               </section>
             ) : (
-              <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm">
+              <section className="mt-6 am-card p-4">
             <div className="flex flex-wrap items-center gap-2">
               <label className="relative min-w-44 flex-1">
                 <span className="sr-only">الفصل</span>

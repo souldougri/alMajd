@@ -50,11 +50,22 @@ export const Route = createFileRoute("/api/students")({
             photo: str(body.photo),
             email: str(body.email),
             branchId: str(body.branchId) ?? "",
+            classId: str(body.classId),
             loginEmail: str(body.loginEmail),
             loginPassword: str(body.loginPassword),
           };
-          const student = await registerStudent(input, user);
-          return jsonOk({ student });
+          const { student, login } = await registerStudent(input, user);
+          // Both passwords are returned only at creation time: they are never
+          // stored in plaintext and no endpoint re-exposes them afterwards.
+          const shape = (l: { email: string; password: string; created: boolean }) => ({
+            email: l.email,
+            password: l.password,
+            created: l.created,
+          });
+          return jsonOk({
+            student,
+            login: { student: shape(login.student), parent: shape(login.parent) },
+          });
         } catch (err) {
           return handle(err);
         }

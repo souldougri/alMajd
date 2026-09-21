@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bell, BookOpen, Building2, CalendarCheck2, FolderOpen, Globe, HardDriveDownload, LayoutDashboard, ShieldCheck, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Banknote, Bell, BookOpen, Building2, CalendarCheck2, FolderOpen, Globe, HardDriveDownload, LayoutDashboard, ShieldCheck, Users, Wallet, type LucideIcon } from "lucide-react";
 import { AppHeader } from "./app-header";
+import { StatTile } from "@/components/ui/stat-tile";
 import { BranchManagement } from "@/components/admin/branch-management";
 import { UserManagement } from "./user-management";
 import { AuditLogView } from "./audit-log";
@@ -155,14 +156,14 @@ function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="الطلاب المسجلون" value={String(students.length)} hint={`ذكر ${stats.males} · أنثى ${stats.females}${stats.unknownGender > 0 ? ` · غير محدد ${stats.unknownGender}` : ""} — ${stats.perClass.length} صف`} />
-        <StatTile label="حضور اليوم" value={stats.marked ? `${attendanceRate}%` : "—"} hint={`حاضر ${stats.present} · متأخر ${stats.late} · غائب ${stats.absent}`} tone={stats.marked ? (attendanceRate >= 90 ? "ok" : attendanceRate >= 70 ? "warn" : "bad") : undefined} />
-        <StatTile label="المحصل من الرسوم" value={money(stats.paid)} hint={`متبقي ${money(stats.outstanding)} من ${money(stats.due)}`} />
-        <StatTile label="الإنفاق المسجل" value={money(stats.expenseTotal)} hint={`${stats.recentExpenses.length > 0 ? `${stats.recentExpenses[0].category} — ${money(stats.recentExpenses[0].amount)}` : "لا نفقات بعد"}`} />
+        <StatTile className="rise-in" style={{ "--rise-delay": "0ms" } as CSSProperties} icon={Users} label="الطلاب المسجلون" value={String(students.length)} hint={`ذكر ${stats.males} · أنثى ${stats.females}${stats.unknownGender > 0 ? ` · غير محدد ${stats.unknownGender}` : ""} — ${stats.perClass.length} صف`} />
+        <StatTile className="rise-in" style={{ "--rise-delay": "60ms" } as CSSProperties} icon={CalendarCheck2} label="حضور اليوم" value={stats.marked ? `${attendanceRate}%` : "—"} hint={`حاضر ${stats.present} · متأخر ${stats.late} · غائب ${stats.absent}`} tone={stats.marked ? (attendanceRate >= 90 ? "ok" : attendanceRate >= 70 ? "warn" : "bad") : undefined} />
+        <StatTile className="rise-in" style={{ "--rise-delay": "120ms" } as CSSProperties} icon={Wallet} label="المحصل من الرسوم" value={money(stats.paid)} hint={`متبقي ${money(stats.outstanding)} من ${money(stats.due)}`} />
+        <StatTile className="rise-in" style={{ "--rise-delay": "180ms" } as CSSProperties} icon={Banknote} label="الإنفاق المسجل" value={money(stats.expenseTotal)} hint={`${stats.recentExpenses.length > 0 ? `${stats.recentExpenses[0].category} — ${money(stats.recentExpenses[0].amount)}` : "لا نفقات بعد"}`} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
+        <div className="am-card p-5">
           <h2 className="font-bold text-navy">توزع الطلاب حسب الصف</h2>
           <ul className="mt-4 space-y-2">
             {stats.perClass.length === 0 ? (
@@ -187,7 +188,7 @@ function AdminDashboard() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
+        <div className="am-card p-5">
           <h2 className="font-bold text-navy">آخر الدفعات</h2>
           <ul className="mt-4 space-y-2">
             {stats.recentPayments.length === 0 ? (
@@ -213,14 +214,15 @@ function AdminDashboard() {
       <div>
         <h2 className="mb-3 font-bold text-navy">مساحات العمل</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {(Object.keys(WORKSPACE_LABELS) as WorkspaceId[]).map((id) => {
+          {(Object.keys(WORKSPACE_LABELS) as WorkspaceId[]).map((id, i) => {
             const label = WORKSPACE_LABELS[id];
             const Icon = WS_ICONS[id];
             return (
               <Link
                 key={id}
                 to={label.route}
-                className="rounded-2xl border border-gold/20 bg-white p-5 shadow-sm transition-colors hover:border-gold"
+                style={{ "--rise-delay": `${i * 60}ms` } as CSSProperties}
+                className="am-card am-card-hover rise-in p-5"
               >
                 <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-navy text-gold">
                   <Icon className="size-5" />
@@ -232,23 +234,6 @@ function AdminDashboard() {
           })}
         </div>
       </div>
-    </div>
-  );
-}
-
-function StatTile({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: "ok" | "warn" | "bad" }) {
-  return (
-    <div className="rounded-2xl border border-navy/10 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold text-navy/55">{label}</p>
-      <p
-        className={cn(
-          "mt-1 font-display text-2xl font-bold",
-          tone === "ok" ? "text-success" : tone === "warn" ? "text-warn" : tone === "bad" ? "text-danger" : "text-navy",
-        )}
-      >
-        {value}
-      </p>
-      <p className="mt-1 text-xs text-navy/50">{hint}</p>
     </div>
   );
 }
@@ -280,34 +265,34 @@ function ExpensesOverview() {
           إجمالي الإنفاق المسجل: <b className="text-navy">{money(total)}</b>
         </p>
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-navy/10 bg-white">
-        <table className="w-full text-right text-sm">
+      <div className="am-table-wrap">
+        <table className="am-table">
           <thead>
-            <tr className="border-b border-navy/10 bg-cream-subtle text-navy">
-              <th className="px-4 py-3 font-bold">التاريخ</th>
-              <th className="px-4 py-3 font-bold">التصنيف</th>
-              <th className="px-4 py-3 font-bold">المورّد</th>
-              <th className="px-4 py-3 font-bold">البيان</th>
-              <th className="px-4 py-3 font-bold">المبلغ</th>
+            <tr>
+              <th>التاريخ</th>
+              <th>التصنيف</th>
+              <th>المورّد</th>
+              <th>البيان</th>
+              <th>المبلغ</th>
             </tr>
           </thead>
           <tbody>
             {expenses.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-navy/50">
+                <td colSpan={5} className="py-8 text-center text-navy/50">
                   لا توجد عمليات إنفاق مسجلة بعد.
                 </td>
               </tr>
             ) : (
               expenses.map((ex) => (
-                <tr key={ex.id} className="border-b border-navy/5 last:border-0">
-                  <td className="px-4 py-3">{ex.date}</td>
-                  <td className="px-4 py-3">
+                <tr key={ex.id}>
+                  <td>{ex.date}</td>
+                  <td>
                     <span className="rounded-full bg-cream-subtle px-2.5 py-0.5 text-xs font-semibold text-navy/70">{ex.category}</span>
                   </td>
-                  <td className="px-4 py-3 text-navy/70">{ex.vendor || "—"}</td>
-                  <td className="px-4 py-3 text-navy/70">{ex.note}</td>
-                  <td className="px-4 py-3 font-bold text-navy">{money(ex.amount)}</td>
+                  <td className="text-navy/70">{ex.vendor || "—"}</td>
+                  <td className="text-navy/70">{ex.note}</td>
+                  <td className="font-bold text-navy">{money(ex.amount)}</td>
                 </tr>
               ))
             )}

@@ -1,4 +1,4 @@
-export type Role = "super_admin" | "staff" | "teacher" | "student";
+export type Role = "super_admin" | "staff" | "teacher" | "student" | "parent";
 
 /** Optional duties selectable for staff accounts; each grants desk modules. */
 export type StaffDuty = "registrar" | "academic" | "accountant" | "supervisor";
@@ -15,6 +15,11 @@ export type User = {
   staffId?: string;
   /** Optional link to a Student record in the school document (students). */
   studentId?: string;
+  /**
+   * Optional link to the single Student a parent account is bound to
+   * (one-to-one; DB-enforced unique). Only set for role "parent".
+   */
+  parentStudentId?: string;
   /** Staff duties granted to this account (non-staff roles always have none). */
   duties: StaffDuty[];
   createdAt: string;
@@ -36,6 +41,7 @@ export const ROLE_LABELS: Record<Role, { ar: string; en: string; fr: string }> =
   staff: { ar: "موظف", en: "Staff", fr: "Personnel" },
   teacher: { ar: "أستاذ", en: "Teacher", fr: "Enseignant" },
   student: { ar: "طالب", en: "Student", fr: "Étudiant" },
+  parent: { ar: "ولي أمر", en: "Parent", fr: "Parent" },
 };
 
 export const ROLE_REDIRECTS: Record<Role, string> = {
@@ -43,6 +49,9 @@ export const ROLE_REDIRECTS: Record<Role, string> = {
   staff: "/app/staff",
   teacher: "/app/teacher",
   student: "/app/student",
+  // Parent Portal page lands in a later task; the API/session foundation
+  // (login + parent endpoints) works without it.
+  parent: "/app/parent",
 };
 
 export const DUTY_LABELS: Record<StaffDuty, { ar: string; fr: string }> = {

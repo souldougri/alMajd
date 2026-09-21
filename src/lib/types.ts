@@ -10,6 +10,8 @@ export type Student = {
   gender: Gender;
   klass: string;
   classId?: string; // Reference to ClassSection.id
+  /** Owning branch (present in relational hydration; used for branch scoping). */
+  branchId?: string;
   dob: string; // ISO YYYY-MM-DD
   placeOfBirth: string;
   parentAr: string;
@@ -19,12 +21,16 @@ export type Student = {
   photo?: string; // Base64 data URL for student photo
   /** Optional personal email — used as the student's portal login id when provided. */
   email?: string;
+  /** Branch display name (present in relational portfolio payloads). */
+  branchNameAr?: string;
 };
 
 export type ClassSection = {
   id: string;
   nameAr: string;
   nameFr?: string;
+  /** Owning branch (present in relational hydration; used for branch scoping). */
+  branchId?: string;
   level?: string;
   section?: string;
   capacity?: number;

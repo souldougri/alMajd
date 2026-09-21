@@ -19,6 +19,7 @@ import {
   classSubjects,
   formatPrintDate,
   formatScore,
+  officialDocNo,
   receiptNumber,
   summonsNumber,
   weightedPoints,
@@ -31,6 +32,7 @@ import type { Warning } from "@/lib/types";
 export type PrintJob =
   | { kind: "roster"; classId: string }
   | { kind: "receipt"; paymentId: string }
+  | { kind: "expense-receipt"; expenseId: string }
   | { kind: "bulletin"; studentId: string; termId: string }
   | { kind: "warning"; warningId: string }
   | { kind: "summons"; studentId: string; warningId?: string }
@@ -98,6 +100,7 @@ function printJobKey(job: PrintJob): string {
 const DOC_FILE_NAMES: Record<PrintJob["kind"], string> = {
   roster: "class-roster.pdf",
   receipt: "fee-receipt.pdf",
+  "expense-receipt": "expense-receipt.pdf",
   bulletin: "report-card.pdf",
   warning: "warning.pdf",
   summons: "summons.pdf",
@@ -201,6 +204,8 @@ function OfficialSheet({
       return <RosterSheet classId={job.classId} />;
     case "receipt":
       return <ReceiptSheet paymentId={job.paymentId} />;
+    case "expense-receipt":
+      return <ExpenseReceiptSheet expenseId={job.expenseId} />;
     case "bulletin":
       return <BulletinSheet studentId={job.studentId} termId={job.termId} />;
     case "warning":
@@ -374,6 +379,57 @@ function ReceiptSheet({ paymentId }: { paymentId: string }) {
         <div>
           <dt>المتبقي من الرسوم السنوية</dt>
           <dd>{student ? money(remaining) : "—"}</dd>
+        </div>
+      </dl>
+      <SignatureBlock left="الختم والتوقيع" right="المحاسبة" />
+    </article>
+  );
+}
+
+function ExpenseReceiptSheet({ expenseId }: { expenseId: string }) {
+  const expenses = useSchool((s) => s.expenses);
+  const expense = expenses.find((e) => e.id === expenseId);
+  if (!expense) {
+    return (
+      <article className="print-sheet" dir="rtl">
+        <p>عملية الإنفاق غير موجودة.</p>
+      </article>
+    );
+  }
+  const no = officialDocNo(
+    "EXP",
+    expense.date,
+    expense.id,
+    expenses.map((e) => ({ id: e.id, date: e.date })),
+  );
+
+  return (
+    <article className="print-sheet" dir="rtl">
+      <PrintHeader titleAr="إيصال إنفاق" titleFr="Reçu de dépense" />
+      <dl className="print-dl">
+        <div>
+          <dt>رقم الإيصال</dt>
+          <dd className="ltr">{no}</dd>
+        </div>
+        <div>
+          <dt>تاريخ العملية</dt>
+          <dd>{formatPrintDate(expense.date)}</dd>
+        </div>
+        <div>
+          <dt>التصنيف</dt>
+          <dd>{expense.category}</dd>
+        </div>
+        <div>
+          <dt>المورّد</dt>
+          <dd>{expense.vendor || "—"}</dd>
+        </div>
+        <div>
+          <dt>المبلغ المصروف</dt>
+          <dd>{money(expense.amount)}</dd>
+        </div>
+        <div>
+          <dt>البيان</dt>
+          <dd>{expense.note || "—"}</dd>
         </div>
       </dl>
       <SignatureBlock left="الختم والتوقيع" right="المحاسبة" />
