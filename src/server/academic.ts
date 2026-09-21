@@ -7,6 +7,7 @@
  */
 import { getDb, type DbRow } from "./db";
 import { uid, writeAudit } from "./auth";
+import { randomBytes } from "node:crypto";
 import { ApiError } from "./http";
 import { getUserBranchScope, requireBranchAccess, requireBranchHeadOrAdmin, requireBranchId } from "./scope";
 import type { SafeUser } from "@/lib/auth/types";
@@ -57,6 +58,8 @@ export type SubjectRow = {
   nameFr: string;
   active: boolean;
   createdAt: string;
+  /** Owning branch for branch-created subjects; undefined = global catalog entry. */
+  branchId?: string;
 };
 
 export type ClassSubjectRow = {
@@ -149,6 +152,7 @@ function toSubject(row: DbRow): SubjectRow {
     nameFr: String(row.name_fr ?? ""),
     active: Boolean(row.active),
     createdAt: String(row.created_at),
+    branchId: row.branch_id ? String(row.branch_id) : undefined,
   };
 }
 
@@ -345,33 +349,71 @@ export async function deleteTerm(id: string, actor: SafeUser): Promise<void> {
 // Subjects (global catalog)
 // ---------------------------------------------------------------------------
 
-export async function listSubjects(): Promise<SubjectRow[]> {
+export async function listSubjects(filter?: { branchId?: string }): Promise<SubjectRow[]> {
+  // No filter → whole catalog (existing callers unchanged). With a branch →
+  // global entries plus that branch's own subjects (other branches excluded).
+  const params: unknown[] = [];
+  let where = "";
+  if (filter?.branchId) {
+    params.push(filter.branchId);
+    where = ` WHERE (branch_id IS NULL OR branch_id = $1)`;
+  }
   const result = await (
     await getDb()
-  ).query("SELECT id, code, name_ar, name_fr, active, created_at FROM subjects ORDER BY name_ar ASC");
+  ).query(`SELECT id, code, name_ar, name_fr, active, created_at, branch_id FROM subjects${where} ORDER BY name_ar ASC`, params);
   return result.rows.map(toSubject);
 }
 
 export async function createSubject(
-  input: { id?: string; code: string; nameAr: string; nameFr?: string },
+  input: { id?: string; code?: string; nameAr: string; nameFr?: string; branchId?: string },
   actor: SafeUser,
 ): Promise<SubjectRow> {
-  if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
+  const nameAr = input.nameAr.trim();
+  if (!nameAr) throw new ApiError("يرجى إدخال اسم المادة");
+  const bid = input.branchId?.trim() || "";
+  if (bid) {
+    const db0 = await getDb();
+    const br = await db0.query("SELECT id FROM branches WHERE id = $1", [bid]);
+    if (br.rows.length === 0) throw new ApiError("الفرع غير موجود", 404);
+    // Branch heads may create subjects inside their own branch only; the
+    // central academic administration keeps creating global entries.
+    if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
+      await requireBranchHeadOrAdmin(actor, bid);
+    } else {
+      await requireBranchAccess(actor, bid);
+    }
+  } else if (actor.role !== "super_admin" && !actor.duties.includes("academic")) {
     throw new ApiError("غير مصرح لك — إنشاء المواد يتطلب صلاحية الشؤون الدراسية أو مدير النظام", 403);
   }
-  const code = input.code.trim().toUpperCase();
-  const nameAr = input.nameAr.trim();
-  if (!code || !nameAr) throw new ApiError("يرجى إدخال رمز المادة واسمها");
+  // Catalog codes stay globally unique. Branch-created subjects get an
+  // auto-generated code so the head only types the names.
+  let code = (input.code ?? "").trim().toUpperCase();
   const db = await getDb();
-  const clash = await db.query("SELECT id FROM subjects WHERE code = $1", [code]);
-  if (clash.rows.length > 0) throw new ApiError("يوجد بالفعل مادة بهذا الرمز");
+  if (!code) {
+    code = await generateSubjectCode(db);
+  } else {
+    const clash = await db.query("SELECT id FROM subjects WHERE code = $1", [code]);
+    if (clash.rows.length > 0) throw new ApiError("يوجد بالفعل مادة بهذا الرمز");
+  }
   const id = input.id?.trim() || uid("sub");
   await db.query(
-    "INSERT INTO subjects (id, code, name_ar, name_fr, active, created_at) VALUES ($1, $2, $3, $4, true, $5)",
-    [id, code, nameAr, input.nameFr?.trim() ?? "", new Date().toISOString()],
+    "INSERT INTO subjects (id, code, name_ar, name_fr, active, branch_id, created_at) VALUES ($1, $2, $3, $4, true, $5, $6)",
+    [id, code, nameAr, input.nameFr?.trim() ?? "", bid || null, new Date().toISOString()],
   );
   await writeAudit({ action: "subject.create", actorId: actor.id, actorName: actor.nameAr, targetId: id, targetName: nameAr, entityType: "subject", detail: `created subject ${code}` });
-  return { id, code, nameAr, nameFr: input.nameFr?.trim() ?? "", active: true, createdAt: new Date().toISOString() };
+  return { id, code, nameAr, nameFr: input.nameFr?.trim() ?? "", active: true, branchId: bid || undefined, createdAt: new Date().toISOString() };
+}
+
+async function generateSubjectCode(db: Awaited<ReturnType<typeof getDb>>): Promise<string> {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  for (let attempt = 0; attempt < 10; attempt++) {
+    let code = "SUB-";
+    const bytes = randomBytes(4);
+    for (const b of bytes) code += chars[b % chars.length];
+    const clash = await db.query("SELECT id FROM subjects WHERE code = $1", [code]);
+    if (clash.rows.length === 0) return code;
+  }
+  throw new ApiError("تعذر توليد رمز فريد للمادة — حاول مجددًا");
 }
 
 export async function updateSubject(

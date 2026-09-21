@@ -492,12 +492,27 @@ export type CatalogSubject = {
   code: string;
   nameAr: string;
   active: boolean;
+  /** Owning branch for branch-created subjects; undefined = global catalog entry. */
+  branchId?: string;
 };
 
 /** Global subject catalog (readable by any authenticated user; catalog writes stay duty-gated). */
 export async function getSubjectsCatalog(): Promise<CatalogSubject[]> {
   const res = await api.get<{ items: CatalogSubject[] }>("/api/academic/subjects");
   return unwrap(res, (res.data?.items ?? []).filter((s) => s.active), "تعذر تحميل المواد");
+}
+
+/** Subjects usable in a branch: global catalog plus that branch's own subjects (branch scope enforced server-side). */
+export async function getBranchSubjects(branchId: string): Promise<CatalogSubject[]> {
+  const res = await api.get<{ items: CatalogSubject[] }>(`/api/academic/subjects?branchId=${encodeURIComponent(branchId)}`);
+  return unwrap(res, (res.data?.items ?? []).filter((s) => s.active), "تعذر تحميل المواد");
+}
+
+/** Creates a subject inside a branch (name only — code auto-generated). Branch scope enforced server-side. */
+export async function createBranchSubject(branchId: string, input: { nameAr: string; nameFr?: string }): Promise<CatalogSubject> {
+  const res = await api.post<{ item: CatalogSubject }>("/api/academic/subjects", { ...input, branchId });
+  if (!res.ok || !res.data?.item) throw new Error(res.error ?? "تعذر إنشاء المادة");
+  return res.data.item;
 }
 
 /** Active terms for pickers (readable by any authenticated user). */

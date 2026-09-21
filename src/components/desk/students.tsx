@@ -11,6 +11,11 @@ import { writeAuditEntry } from "@/lib/audit";
 import type { BranchStudent, BranchStudentRegistration } from "@/lib/branches";
 import { money } from "@/lib/school";
 import { useSchool } from "@/lib/store";
+import { getAdmissionDocument, type AdmissionDocument } from "@/lib/reports";
+import {
+  RelationalReportViewer,
+  type ReportViewerJob,
+} from "@/components/reports/report-sheets";
 import { processPhotoFile } from "@/lib/utils";
 import type { Gender, Student } from "@/lib/types";
 
@@ -53,6 +58,60 @@ export function StudentsView({ mode = "full", branchId, onRegistered }: {
   const [loginError, setLoginError] = useState("");
   const [loginResult, setLoginResult] = useState<{ studentId: string; email: string; password: string; created: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
+  // Branch handover: the freshly created student + parent credentials, shown
+  // once as a dismissible card (copyable + printable) right after registration.
+  const [handover, setHandover] = useState<{
+    studentId: string;
+    studentName: string;
+    sEmail: string;
+    sPassword: string;
+    pEmail: string;
+    pPassword: string;
+  } | null>(null);
+  const [handoverCopied, setHandoverCopied] = useState(false);
+  const [handoverJob, setHandoverJob] = useState<ReportViewerJob | null>(null);
+  const [handoverBusy, setHandoverBusy] = useState(false);
+  const [handoverError, setHandoverError] = useState("");
+
+  async function copyHandover() {
+    if (!handover) return;
+    const lines = [
+      `حساب الطالب — login: ${handover.sEmail}`,
+      handover.sPassword ? `password: ${handover.sPassword}` : null,
+      handover.pPassword
+        ? `حساب ولي الأمر — login: ${handover.pEmail} / password: ${handover.pPassword}`
+        : null,
+    ].filter(Boolean) as string[];
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setHandoverCopied(true);
+      setTimeout(() => setHandoverCopied(false), 1500);
+    } catch {
+      // Clipboard unavailable — credentials stay visible on screen.
+    }
+  }
+
+  async function printHandoverAdmission() {
+    if (!handover) return;
+    setHandoverBusy(true);
+    setHandoverError("");
+    try {
+      const doc: AdmissionDocument = await getAdmissionDocument(handover.studentId);
+      setHandoverJob({
+        kind: "admission",
+        doc: {
+          ...doc,
+          studentPassword: handover.sPassword || null,
+          parentLoginUsername: handover.pEmail || null,
+          parentPassword: handover.pPassword || null,
+        },
+      });
+    } catch (err) {
+      setHandoverError(err instanceof Error ? err.message : "تعذر تجهيز وثيقة القبول");
+    } finally {
+      setHandoverBusy(false);
+    }
+  }
 
   const scopedStudents = useMemo(
     // Branch scope: the head works on one branch only (server scope already
@@ -249,11 +308,68 @@ export function StudentsView({ mode = "full", branchId, onRegistered }: {
         onClose={() => setRegOpen(false)}
         showBranchPicker={!branch}
         branchId={branch ? branchId : undefined}
+        credentialsMode={branch ? "external" : undefined}
         onRegistered={(r) => {
           syncRegistered(r);
+          // Branch handover card (GM/registrar keep the modal's own view).
+          if (branch && (r.login.student.password || r.login.parent.password)) {
+            setHandover({
+              studentId: r.student.id,
+              studentName: r.student.nameAr,
+              sEmail: r.login.student.email,
+              sPassword: r.login.student.password,
+              pEmail: r.login.parent.email,
+              pPassword: r.login.parent.password,
+            });
+            setHandoverCopied(false);
+            setHandoverError("");
+          }
           onRegistered?.(r);
         }}
       />
+
+      {branch && handover ? (
+        <div className="rounded-2xl border-2 border-gold bg-gold/10 p-4 shadow-sm">
+          <p className="font-display text-lg font-bold text-navy">
+            تم تسجيل «{handover.studentName}» — سلّم هذه البيانات لأصحابها فورًا
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl bg-white/70 p-3 text-sm">
+              <p className="font-bold text-navy">حساب الطالب</p>
+              <p className="mt-1.5" dir="ltr">login: <b>{handover.sEmail}</b></p>
+              {handover.sPassword ? (
+                <p dir="ltr">password: <b>{handover.sPassword}</b></p>
+              ) : (
+                <p className="mt-1 text-xs text-navy/55">بلا كلمة مرور جديدة.</p>
+              )}
+            </div>
+            <div className="rounded-xl bg-white/70 p-3 text-sm">
+              <p className="font-bold text-navy">حساب ولي الأمر</p>
+              <p className="mt-1.5" dir="ltr">login: <b>{handover.pEmail}</b></p>
+              {handover.pPassword ? (
+                <p dir="ltr">password: <b>{handover.pPassword}</b></p>
+              ) : (
+                <p className="mt-1 text-xs text-navy/55">بلا كلمة مرور جديدة.</p>
+              )}
+            </div>
+          </div>
+          {handoverError ? <p className="mt-2 text-xs font-semibold text-danger">{handoverError}</p> : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => void copyHandover()}>
+              {handoverCopied ? "تم النسخ ✓" : "نسخ البيانات"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => void printHandoverAdmission()} disabled={handoverBusy}>
+              {handoverBusy ? "جارٍ التجهيز…" : "طباعة وثيقة القبول"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setHandover(null)}>
+              إغلاق
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {handoverJob ? (
+        <RelationalReportViewer job={handoverJob} onClose={() => setHandoverJob(null)} />
+      ) : null}
 
       <Input
         value={q}

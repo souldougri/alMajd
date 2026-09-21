@@ -518,6 +518,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS duties TEXT NOT NULL DEFAULT '';
 -- referential integrity (a deleted student drops its parent login).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_student_id TEXT REFERENCES students(id) ON DELETE CASCADE;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS branch_id TEXT;
+-- Branch-local subjects (NULL = global catalog entry shared by all branches).
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS branch_id TEXT REFERENCES branches(id) ON DELETE CASCADE;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS branch_id TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS entity_type TEXT NOT NULL DEFAULT '';
 
@@ -530,6 +532,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at
 -- above: databases created before branch_id existed would otherwise abort the
 -- whole schema batch here (column "branch_id" does not exist).
 CREATE INDEX IF NOT EXISTS idx_documents_branch ON documents(branch_id);
+CREATE INDEX IF NOT EXISTS idx_subjects_branch ON subjects(branch_id);
 CREATE INDEX IF NOT EXISTS idx_audit_branch ON audit_logs(branch_id);
 -- One parent account per student (NULLs are exempt from uniqueness).
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_parent_student ON users(parent_student_id);

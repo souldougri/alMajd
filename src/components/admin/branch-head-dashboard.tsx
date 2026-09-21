@@ -32,6 +32,7 @@ import {
   attachClassSubject,
   createBranchClass,
   createBranchExamSession,
+  createBranchSubject,
   detachClassSubject,
   getAcademicYears,
   getBranchClasses,
@@ -40,6 +41,7 @@ import {
   getBranchFinancialOfficer,
   getBranchMembers,
   getBranchStudents,
+  getBranchSubjects,
   getBranchTeachers,
   getBranchWarnings,
   getClassAttendance,
@@ -47,7 +49,6 @@ import {
   getClassSubjects,
   getClassTimetable,
   getHeadedBranches,
-  getSubjectsCatalog,
   getTeacherAssignments,
   getTerms,
   markBranchAttendance,
@@ -167,24 +168,30 @@ function BranchTabButton({ active, onClick, children }: { active: boolean; onCli
 
 /**
  * One branch workspace = one card grouping all of its panels behind pill
- * tabs — the exact layout grammar of the existing GM workspaces.
+ * tabs — the exact layout grammar of the existing GM workspaces. Inactive
+ * tabs stay mounted but hidden so switching tabs never refetches or loses
+ * draft state (their queries run once, on first mount).
  */
 function BranchWorkspace({ tabs }: { tabs: { id: string; label: string; icon?: ReactNode; node: ReactNode }[] }) {
   const [tab, setTab] = useState(tabs[0]?.id);
-  const current = tabs.find((t) => t.id === tab) ?? tabs[0];
+  const active = tabs.some((t) => t.id === tab) ? tab : tabs[0]?.id;
   return (
     <section className="am-card p-4 shadow-sm sm:p-6">
       {tabs.length > 1 ? (
         <div className="mb-6 flex flex-wrap gap-2">
           {tabs.map((t) => (
-            <BranchTabButton key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+            <BranchTabButton key={t.id} active={active === t.id} onClick={() => setTab(t.id)}>
               {t.icon}
               {t.label}
             </BranchTabButton>
           ))}
         </div>
       ) : null}
-      {current?.node}
+      {tabs.map((t) => (
+        <div key={t.id} hidden={active !== t.id}>
+          {t.node}
+        </div>
+      ))}
     </section>
   );
 }
@@ -232,13 +239,8 @@ export function BranchHeadDashboard({ userId }: { userId: string }) {
         getBranchWarnings(branchId).catch(() => [] as BranchWarning[]),
         getBranchFinancialOfficer(branchId).catch(() => null),
       ]);
-      const date = todayIso();
-      const attendancePairs = await Promise.all(
-        classes.map(async (c) => {
-          const items = await getClassAttendance(c.id, date).catch(() => [] as AttendanceEntry[]);
-          return [c.id, items] as const;
-        }),
-      );
+      // Today's attendance is NOT loaded here: it costs one request per class
+      // and is only needed inside the attendance workspace (lazy below).
       setBundle({
         members,
         teachers,
@@ -247,12 +249,44 @@ export function BranchHeadDashboard({ userId }: { userId: string }) {
         duties,
         warnings,
         fo,
-        attendance: Object.fromEntries(attendancePairs),
+        attendance: {},
       });
     } finally {
       setDetailsLoading(false);
     }
   }
+
+  // Lazy today's-attendance map, fetched only when the attendance workspace
+  // is opened (once per branch), instead of N requests on every refresh.
+  const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceEntry[]>>({});
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+  async function loadAttendance(classIds: string[]) {
+    if (classIds.length === 0) {
+      setAttendanceMap({});
+      return;
+    }
+    setAttendanceLoading(true);
+    try {
+      const date = todayIso();
+      const pairs = await Promise.all(
+        classIds.map(async (c) => {
+          const items = await getClassAttendance(c, date).catch(() => [] as AttendanceEntry[]);
+          return [c, items] as const;
+        }),
+      );
+      setAttendanceMap(Object.fromEntries(pairs));
+    } finally {
+      setAttendanceLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (section === "attendance" && selectedId) {
+      void loadAttendance(bundle.classes.map((c) => c.id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, selectedId, bundle.classes]);
 
   async function refresh(selectId?: string) {
     setLoading(true);
@@ -541,6 +575,7 @@ export function BranchHeadDashboard({ userId }: { userId: string }) {
                   icon: <BookOpen className="size-4" />,
                   node: (
                     <ClassSubjectsSection
+                      branchId={selected.id}
                       classes={bundle.classes}
                       onChanged={() => loadDetails(selected.id)}
                       ok={(m) => setMessage(m)}
@@ -628,10 +663,12 @@ export function BranchHeadDashboard({ userId }: { userId: string }) {
                         <p className="mt-3 rounded-xl border border-dashed border-navy/20 px-3 py-4 text-center text-sm text-navy/55">
                           لا توجد فصول لعرض حضورها.
                         </p>
+                      ) : attendanceLoading ? (
+                        <p className="mt-3 text-center text-sm text-navy/55">جارٍ تحميل حضور اليوم…</p>
                       ) : (
                         <ul className="mt-3 space-y-2">
                           {bundle.classes.map((c) => {
-                            const marks = bundle.attendance[c.id] ?? [];
+                            const marks = attendanceMap[c.id] ?? [];
                             const present = marks.filter((m) => m.status === "present").length;
                             const late = marks.filter((m) => m.status === "late").length;
                             const absent = marks.filter((m) => m.status === "absent").length;
@@ -659,7 +696,10 @@ export function BranchHeadDashboard({ userId }: { userId: string }) {
                     <AttendanceManage
                       classes={bundle.classes}
                       students={bundle.students}
-                      onChanged={() => loadDetails(selected.id)}
+                      onChanged={async () => {
+                        await loadDetails(selected.id);
+                        await loadAttendance(bundle.classes.map((c) => c.id));
+                      }}
                       ok={(m) => setMessage(m)}
                     />
                   ),
@@ -1607,10 +1647,11 @@ function ClassesSection({
 }
 
 function ClassSubjectsSection({
+  branchId,
   classes,
   onChanged,
   ok,
-}: SectionCallback & { classes: BranchClass[] }) {
+}: SectionCallback & { branchId: string; classes: BranchClass[] }) {
   const notifyOk = ok ?? (() => undefined);
   const [classId, setClassId] = useState("");
   const [attached, setAttached] = useState<ClassSubject[]>([]);
@@ -1618,23 +1659,26 @@ function ClassSubjectsSection({
   const [subjectId, setSubjectId] = useState("");
   const [coefficient, setCoefficient] = useState("1");
   const [maxScore, setMaxScore] = useState("20");
+  const [newNameAr, setNewNameAr] = useState("");
+  const [newNameFr, setNewNameFr] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<ClassSubject | null>(null);
 
   const activeClassId = classId || classes[0]?.id || "";
 
+  async function loadCatalog() {
+    try {
+      setCatalog(await getBranchSubjects(branchId));
+    } catch {
+      setCatalog([]);
+    }
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    getSubjectsCatalog()
-      .then((list) => {
-        if (!cancelled) setCatalog(list);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void loadCatalog();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branchId, classes]);
 
   useEffect(() => {
     if (!activeClassId) {
@@ -1686,6 +1730,46 @@ function ClassSubjectsSection({
     }
   }
 
+  async function submitCreate(e: FormEvent) {
+    e.preventDefault();
+    if (!newNameAr.trim()) {
+      setError("يرجى إدخال اسم المادة الجديدة");
+      return;
+    }
+    if (!activeClassId) {
+      setError("اختر الفصل أولًا");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      // Create the subject inside this branch (code auto-generated), then
+      // attach it to the active class so it immediately appears for teacher
+      // assignment. The global catalog is never modified by hand.
+      const created = await createBranchSubject(branchId, {
+        nameAr: newNameAr.trim(),
+        nameFr: newNameFr.trim() || undefined,
+      });
+      const coef = Number(coefficient);
+      const max = Number(maxScore);
+      await attachClassSubject(activeClassId, {
+        subjectId: created.id,
+        coefficient: Number.isFinite(coef) && coef > 0 ? coef : 1,
+        maxScore: Number.isFinite(max) && max > 0 ? max : 20,
+      });
+      setNewNameAr("");
+      setNewNameFr("");
+      notifyOk(`تم إنشاء مادة «${created.nameAr}» وربطها بالفصل`);
+      await loadCatalog();
+      await reload();
+      await onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "تعذر إنشاء المادة");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function confirmDetach() {
     if (!removeTarget || !activeClassId) return;
     const t = removeTarget;
@@ -1710,7 +1794,7 @@ function ClassSubjectsSection({
         <BookOpen className="size-4 text-gold" />
         مواد الفصول
       </h3>
-      <p className="mt-1 text-xs text-navy/55">ربط مواد الكتالوج العام بفصول فرعك — دون تعديل الكتالوج نفسه.</p>
+      <p className="mt-1 text-xs text-navy/55">إنشاء مواد داخل فرعك وربطها بفصوله — دون تعديل الكتالوج العام.</p>
       <select aria-label="الفصل" className={cn(selectCls, "mt-3")} value={activeClassId} onChange={(e) => setClassId(e.target.value)}>
         {classes.map((c) => (
           <option key={c.id} value={c.id}>
@@ -1745,10 +1829,10 @@ function ClassSubjectsSection({
       <form onSubmit={submit} className="mt-3 rounded-xl bg-cream-subtle p-3">
         <p className="mb-2 text-sm font-bold text-navy">ربط مادة</p>
         <select aria-label="المادة" className={selectCls} value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-          <option value="">اختر مادة من الكتالوج…</option>
+          <option value="">اختر مادة (الكتالوج العام + مواد فرعك)…</option>
           {catalog.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.nameAr} ({s.code})
+              {s.nameAr} ({s.code}){s.branchId ? " · مادة الفرع" : ""}
             </option>
           ))}
         </select>
@@ -1764,6 +1848,22 @@ function ClassSubjectsSection({
         >
           <Plus className="size-4" />
           ربط
+        </button>
+      </form>
+      <form onSubmit={submitCreate} className="mt-3 rounded-xl bg-cream-subtle p-3">
+        <p className="mb-2 text-sm font-bold text-navy">إنشاء مادة جديدة داخل الفرع وربطها</p>
+        <p className="mb-2 text-xs text-navy/55">تُنشأ المادة في فرعك فقط (مع رمز تلقائي) وتُربط مباشرة بالفصل المحدد أعلاه، فتظهر فورًا عند إسناد المعلمين.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <input aria-label="اسم المادة بالعربية" className={selectCls} value={newNameAr} onChange={(e) => setNewNameAr(e.target.value)} placeholder="مثال: الرياضيات…" />
+          <input aria-label="اسم المادة باللاتينية" className={selectCls} value={newNameFr} onChange={(e) => setNewNameFr(e.target.value)} placeholder="Mathématiques…" />
+        </div>
+        <button
+          type="submit"
+          disabled={busy}
+          className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-navy px-4 py-2.5 text-sm font-bold text-gold disabled:opacity-50 sm:w-auto"
+        >
+          <Plus className="size-4" />
+          إنشاء وربط
         </button>
       </form>
       <ConfirmDialog
