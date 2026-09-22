@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Modal, ModalContent, ModalFooter, ModalHeader } from "@/components/ui/modal";
 import {
   getBranchClasses,
@@ -66,6 +66,13 @@ export function StudentRegistrationModal({
   // Idempotency key for the opened form (one per opening).
   const [formKey, setFormKey] = useState("");
   const [created, setCreated] = useState<BranchStudentRegistration | null>(null);
+  // Guards against double submission of the same form (duplicate submit
+  // events would otherwise race: the second lands as an idempotent replay
+  // with EMPTY passwords and would wrongly dismiss the credentials view).
+  // A ref (not state) is used so concurrent invocations in the same tick
+  // see each other synchronously.
+  const submittingRef = useRef(false);
+  const createdRef = useRef<BranchStudentRegistration | null>(null);
   const [copied, setCopied] = useState(false);
   // One-time admission print (passwords live only in `created`, never fetched).
   const [printJob, setPrintJob] = useState<ReportViewerJob | null>(null);
@@ -123,6 +130,7 @@ export function StudentRegistrationModal({
     setFormError("");
     setPickedBranchId("");
     setCreated(null);
+    createdRef.current = null;
     setPrintJob(null);
     setPrintError("");
   }, [open]);
@@ -166,6 +174,7 @@ export function StudentRegistrationModal({
 
   function close() {
     setCreated(null);
+    createdRef.current = null;
     setCopied(false);
     setPrintJob(null);
     setPrintError("");
@@ -174,6 +183,7 @@ export function StudentRegistrationModal({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (!form.nameAr.trim()) {
       setFormError("يرجى إدخال اسم الطالب");
       return;
@@ -182,6 +192,7 @@ export function StudentRegistrationModal({
       setFormError("يرجى اختيار الفرع");
       return;
     }
+    submittingRef.current = true;
     setSaving(true);
     setFormError("");
     try {
@@ -201,13 +212,17 @@ export function StudentRegistrationModal({
       });
       onRegistered?.(result);
       if (result.login.student.password || result.login.parent.password) {
+        createdRef.current = result;
         setCreated(result);
-      } else {
+      } else if (!createdRef.current) {
+        // Empty-password replay: only dismiss when no credentials view is
+        // already showing, so a racing duplicate can never hide them.
         close();
       }
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "تعذر تسجيل الطالب");
     } finally {
+      submittingRef.current = false;
       setSaving(false);
     }
   }

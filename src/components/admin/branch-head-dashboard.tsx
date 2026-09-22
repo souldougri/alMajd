@@ -440,13 +440,21 @@ export function BranchHeadDashboard({ userId }: { userId: string }) {
       </section>
 
       {detailsLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2" aria-busy="true" aria-label="جارٍ تحميل تفاصيل الفرع">
-          <SkeletonCard />
-          <SkeletonCard />
+        <div
+          className="flex items-center justify-center gap-2 rounded-xl bg-cream-subtle px-4 py-2.5 text-sm font-semibold text-navy/60"
+          aria-busy="true"
+          aria-label="جارٍ تحميل تفاصيل الفرع"
+          role="status"
+        >
+          <span className="size-4 animate-spin rounded-full border-2 border-navy/20 border-t-gold" />
+          جارٍ تحديث بيانات الفرع…
         </div>
-      ) : (
+      ) : null}
+      {
         // Keyed by branch: remounts every section so picker/draft state from
         // the previous branch can never leak into the newly selected branch.
+        // NOTE: refreshes never unmount this tree (only a slim bar above) so
+        // open dialogs/drafts (e.g. post-registration credentials) survive reloads.
         <Fragment key={selected.id}>
           {section === null ? (
             <div>
@@ -815,7 +823,7 @@ export function BranchHeadDashboard({ userId }: { userId: string }) {
             />
           ) : null}
         </Fragment>
-      )}
+      }
 
       <ConfirmDialog
         open={Boolean(confirmDuty)}

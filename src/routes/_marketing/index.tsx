@@ -4,10 +4,12 @@ import {
   Award,
   BookOpenCheck,
   Computer,
+  Download,
   GraduationCap,
   MonitorPlay,
   Newspaper,
   Phone,
+  Smartphone,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PortalLanding } from "@/components/portal/landing";
@@ -128,6 +130,18 @@ export default function HomePage() {
                   {phones[0]}
                 </a>
               ) : null}
+              <a
+                href="/downloads/almajd-app.apk"
+                download
+                className="flex items-center gap-2 rounded-full border border-white/25 px-6 py-3 text-sm font-semibold text-white/85 transition-colors hover:border-gold hover:text-gold"
+              >
+                <Smartphone className="size-4" />
+                {locale === "ar"
+                  ? "حمّل التطبيق"
+                  : locale === "fr"
+                    ? "Télécharger l'app"
+                    : "Download the app"}
+              </a>
             </div>
           </div>
           <div className="flex w-full max-w-sm shrink-0 justify-center">
@@ -139,6 +153,38 @@ export default function HomePage() {
               />
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="border-b border-gold/15 bg-white">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-10 text-center sm:flex-row sm:text-start">
+          <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-navy text-gold">
+            <Smartphone className="size-7" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-display text-2xl font-bold text-navy">
+              {locale === "ar"
+                ? "حمّل تطبيق المجمع على هاتفك"
+                : locale === "fr"
+                  ? "Téléchargez l'application du complexe"
+                  : "Download the complex app"}
+            </h2>
+            <p className="mt-1 text-sm text-navy/60">
+              {locale === "ar"
+                ? "للطلاب وأولياء الأمور والطاقم — Android مباشرة (الإصدار 1.0 · ‏10.3 MB). قد يطلب الهاتف السماح بالتثبيت من مصادر غير معروفة."
+                : locale === "fr"
+                  ? "Pour les élèves, parents et staff — Android direct (version 1.0 · 10,3 Mo). Autorisez l'installation depuis des sources inconnues si demandé."
+                  : "For students, parents and staff — direct Android (v1.0 · 10.3 MB). Allow installs from unknown sources if asked."}
+            </p>
+          </div>
+          <a
+            href="/downloads/almajd-app.apk"
+            download
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-navy px-6 py-3 text-sm font-bold text-gold transition-opacity hover:opacity-90"
+          >
+            <Download className="size-4" />
+            {locale === "ar" ? "تحميل APK" : locale === "fr" ? "Télécharger l'APK" : "Download APK"}
+          </a>
         </div>
       </section>
 
