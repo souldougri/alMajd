@@ -64,6 +64,8 @@ export type BranchStudent = {
   nameAr: string;
   klass: string;
   classId?: string;
+  /** Owning branch (sent by the server; required for branch-scoped lists). */
+  branchId?: string;
   /** Present in the server payload; preserved so edits never reset it. */
   gender?: string;
 };

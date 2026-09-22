@@ -40,12 +40,6 @@ type StudentRegistrationModalProps = {
   branchId?: string;
   /** Registrar/GM scope: the user picks the target branch explicitly. */
   showBranchPicker?: boolean;
-  /**
-   * Where the one-time credentials are displayed: inside this modal
-   * ("modal", default — GM/registrar flow) or by the caller ("external" —
-   * the branch workspace handover card, which also offers copy + print).
-   */
-  credentialsMode?: "modal" | "external";
   onRegistered?: (result: BranchStudentRegistration) => void;
 };
 
@@ -59,7 +53,6 @@ export function StudentRegistrationModal({
   onClose,
   branchId,
   showBranchPicker,
-  credentialsMode = "modal",
   onRegistered,
 }: StudentRegistrationModalProps) {
   const [form, setForm] = useState(EMPTY_FORM);
@@ -207,11 +200,7 @@ export function StudentRegistrationModal({
         loginPassword: form.loginPassword || undefined,
       });
       onRegistered?.(result);
-      if (credentialsMode === "external") {
-        // The caller (branch workspace handover card) displays the
-        // credentials itself — just close here so they show exactly once.
-        close();
-      } else if (result.login.student.password || result.login.parent.password) {
+      if (result.login.student.password || result.login.parent.password) {
         setCreated(result);
       } else {
         close();
